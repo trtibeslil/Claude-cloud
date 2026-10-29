@@ -347,6 +347,7 @@ Yalnızca JSON dizisi döndür, örnek: [{"name":"Spagetti makarna","qty":500,"u
 
 Metin:
 ${text}`, { modelTier: "quick" });
+    debugLog("parse", { source: "text", raw: out });
     ui.review = toReview(out, "text");
   });
 }
@@ -360,6 +361,7 @@ ${ITEM_RULES}
 Ek alan food: yiyecek/içecek/mutfak malzemesiyse true, temizlik veya kişisel bakım ürünüyse false.
 Yalnızca JSON dizisi döndür, örnek: [{"name":"Domates","qty":1245,"unit":"g","category":"Sebze & Meyve","food":true}]`,
       { images: ui.images.map(x => x.file), modelTier: "default" });
+    debugLog("parse", { source: "img", raw: out });
     ui.review = toReview(out, "img");
   });
 }
@@ -373,14 +375,43 @@ function toReview(out, source) {
   return { source, rows };
 }
 function confirmReview() {
-  const rows = ui.review.rows.filter(r => r.on);
-  const { added, increased } = addItems(rows);
-  if (ui.review.source === "text") ui.text = "";
-  else { ui.images.forEach(x => URL.revokeObjectURL(x.url)); ui.images = []; }
-  ui.review = null;
-  ui.tab = "dolap";
-  commit(true);
-  toast(`${added} yeni malzeme eklendi` + (increased ? `, ${increased} malzemenin miktarı arttı.` : "."));
+  try {
+    debugLog("click", { where: "Dolaba ekle", rows: ui.review ? ui.review.rows.length : null });
+    const rows = ui.review.rows.filter(r => r.on);
+    const { added, increased } = addItems(rows);
+    if (ui.review.source === "text") ui.text = "";
+    else { ui.images.forEach(x => URL.revokeObjectURL(x.url)); ui.images = []; }
+    ui.review = null;
+    ui.tab = "dolap";
+    commit(true);
+    toast(`${added} yeni malzeme eklendi` + (increased ? `, ${increased} malzemenin miktarı arttı.` : "."));
+  } catch (e) { report("Dolaba ekle", e); }
+}
+function addBtn(n) {
+  return h("button", { class: "primary add-btn", type: "button", onclick: e => {
+    e.currentTarget.disabled = true; e.currentTarget.textContent = "Ekleniyor…";
+    confirmReview();
+  } }, `Dolaba ekle (${n})`);
+}
+
+/* ---------- teşhis: hataları göster ve kullanıcının gizli kaydına yaz ---------- */
+let debugBase = null, reporting = false;
+function report(where, e) {
+  if (reporting) return;
+  reporting = true;
+  try {
+    const msg = (e && (e.message || e.code)) || String(e);
+    ui.lastError = where + ": " + msg;
+    debugLog("error", { where, message: msg, stack: String((e && e.stack) || "").slice(0, 3000) });
+    render();
+  } finally { reporting = false; }
+}
+function debugLog(kind, entry) {
+  if (!db || !debugBase) return;
+  try {
+    const data = JSON.parse(JSON.stringify({ ...entry, at: Date.now(), ua: navigator.userAgent, w: innerWidth, h: innerHeight }));
+    db.doc(debugBase + "debug-" + kind).set(data).catch(() => {});
+  } catch (_) {}
 }
 
 function dayLabel(i, total) {
@@ -666,16 +697,17 @@ function viewEkle() {
     out.push(h("div", { class: "card" },
       h("div", { class: "row between" }, h("h2", null, "Kontrol et"), h("span", { class: "small muted" }, plural(rows.length, "satır"))),
       h("p", { class: "small muted" }, "Okuduklarımı düzeltebilir, istemediğin satırın işaretini kaldırabilirsin. Aynı isimli malzemeler dolaptakinin üstüne eklenir."),
+      h("div", { class: "row" }, addBtn(n)),
       h("div", { class: "review" }, rows.map((r, i) => {
         const row = h("div", { class: "r" + (r.on ? "" : " off") },
-          h("input", { type: "checkbox", id: "rv-on-" + i, checked: r.on, "aria-label": "Ekle", onchange: e => { r.on = e.target.checked; row.classList.toggle("off", !r.on); btn.textContent = `Dolaba ekle (${rows.filter(x => x.on).length})`; } }),
+          h("input", { type: "checkbox", id: "rv-on-" + i, checked: r.on, "aria-label": "Ekle", onchange: e => { r.on = e.target.checked; row.classList.toggle("off", !r.on); document.querySelectorAll(".add-btn").forEach(b => { b.textContent = `Dolaba ekle (${rows.filter(x => x.on).length})`; }); } }),
           h("input", { class: "name", id: "rv-n-" + i, value: r.name, "aria-label": "Ad", oninput: e => { r.name = e.target.value; } }),
           h("input", { class: "qty", id: "rv-q-" + i, inputmode: "decimal", value: String(r.qty), "aria-label": "Miktar", oninput: e => { r.qty = e.target.value; } }),
           h("select", { class: "unit", id: "rv-u-" + i, "aria-label": "Birim", onchange: e => { r.unit = e.target.value; } }, UNITS.map(u => h("option", { value: u, selected: u === r.unit }, u))));
         return row;
       })),
       h("div", { class: "row" },
-        (btn = h("button", { class: "primary", type: "button", onclick: confirmReview }, `Dolaba ekle (${n})`)),
+        addBtn(n),
         h("button", { type: "button", onclick: () => { ui.review = null; render(); } }, "Vazgeç"))));
     return out;
   }
@@ -795,6 +827,10 @@ function render() {
   const v = document.getElementById("view");
   const views = { dolap: viewDolap, ekle: viewEkle, menu: viewMenu, gecmis: viewGecmis };
   const notices = [];
+  if (ui.lastError) notices.push(h("div", { class: "notice err stack" },
+    h("strong", null, "Bir hata oluştu."),
+    h("span", { class: "small mono" }, ui.lastError),
+    h("div", null, h("button", { type: "button", onclick: () => { ui.lastError = null; render(); } }, "Kapat"))));
   if (ui.saveErr) notices.push(h("div", { class: "notice err stack" },
     h("strong", null, "Son değişiklikler hesabına kaydedilemedi."),
     h("span", null, "Sayfayı kapatmadan önce tekrar dene. Sorun sürerse aşağıdaki hata metnini Claude'a ilet."),
@@ -811,6 +847,8 @@ document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("cl
 
 /* ---------- başlangıç ---------- */
 (function start() {
+  window.addEventListener("error", e => report("sayfa", e.error || e.message));
+  window.addEventListener("unhandledrejection", e => report("sayfa", e.reason));
   const local = loadLocal();
   if (local) state = merged(local);
   setSync("Bu cihazda");
@@ -830,6 +868,7 @@ document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("cl
     try {
       const snap = await ref.get();
       docRef = ref;
+      debugBase = "data/users/" + id + "/";
       const remote = snap.exists ? merged(snap.data()) : null;
       // Hangisi daha yeniyse o kalır: eski hesap kaydı yeni yerel değişiklikleri ezmesin.
       if (remote && (remote.updatedAt || 0) >= (state.updatedAt || 0)) {

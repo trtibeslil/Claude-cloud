@@ -235,7 +235,7 @@ const plural = (n, w) => n + " " + w;
 const LS_KEY = "dolap-defteri-v1";
 const blank = () => ({
   items: [], plan: null, history: [], invRev: 0, updatedAt: 0,
-  settings: { people: 4, days: 1, options: 3, meals: ["Kahvaltı", "Öğle", "Akşam"] },
+  settings: { people: 4, days: 1, options: 3, meals: ["Kahvaltı", "Öğle", "Akşam"], diet: "Dengeli", dietNote: "" },
 });
 let state = blank();
 const ui = {
@@ -295,21 +295,68 @@ function toast(msg) {
 }
 
 /* ---------- envanter işlemleri ---------- */
+// raw.price: o satır için ödenen toplam tutar (TL). Malzemede birim fiyat (TL / g, ml ya da adet) olarak saklanır.
 function addItems(list) {
   let added = 0, increased = 0;
   for (const raw of list) {
     const n = norm(raw.qty, raw.unit);
     if (!raw.name || !(n.qty > 0)) continue;
+    const price = toNum(raw.price);
+    const up = price > 0 ? price / n.qty : null;
     const ex = state.items.find(i => lower(i.name) === lower(raw.name) && i.unit === n.unit);
-    if (ex) { ex.qty = roundQty(ex.qty + n.qty, n.unit); increased++; }
-    else {
-      state.items.push({ id: uid(), name: String(raw.name).trim(), qty: roundQty(n.qty, n.unit), unit: n.unit,
-        category: matchCat(raw.category) });
+    if (ex) {
+      const p = mergePrice(ex.qty, ex.unitPrice, n.qty, up);
+      ex.qty = roundQty(ex.qty + n.qty, n.unit);
+      if (p > 0) ex.unitPrice = p;
+      increased++;
+    } else {
+      const it = { id: uid(), name: String(raw.name).trim(), qty: roundQty(n.qty, n.unit), unit: n.unit, category: matchCat(raw.category) };
+      if (up > 0) it.unitPrice = up;
+      state.items.push(it);
       added++;
     }
   }
   return { added, increased };
 }
+const toNum = v => Number(String(v == null ? "" : v).replace(/[^\d,.-]/g, "").replace(",", ".")) || 0;
+// Eski ve yeni partinin miktara göre ağırlıklı ortalama birim fiyatı.
+function mergePrice(oldQty, oldUp, addQty, addUp) {
+  if (!(addUp > 0)) return oldUp;
+  if (!(oldUp > 0)) return addUp;
+  return (oldQty * oldUp + addQty * addUp) / (oldQty + addQty);
+}
+const money = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 2 });
+const fmtTL = v => money.format(Math.round(v * 100) / 100);
+function perLabel(it) {
+  if (!(it.unitPrice > 0)) return "";
+  if (it.unit === "g") return fmtTL(it.unitPrice * 1000) + "/kg";
+  if (it.unit === "ml") return fmtTL(it.unitPrice * 1000) + "/L";
+  return fmtTL(it.unitPrice) + "/" + it.unit;
+}
+// Kullanılacak malzemelerin dolaptaki fiyatlarına göre maliyet; fiyatı bilinmeyenler ayrıca sayılır.
+function costOfLines(lines) {
+  let total = 0, unknown = 0;
+  for (const { item, qty } of lines) {
+    if (!item || !(qty > 0)) continue;
+    if (item.unitPrice > 0) total += qty * item.unitPrice; else unknown++;
+  }
+  return { total, unknown };
+}
+function costText(c, people) {
+  if (!c.total && c.unknown) return "Maliyet: fiyat bilgisi yok";
+  if (!c.total) return "";
+  return `Maliyet ≈ ${fmtTL(c.total)}` + (people > 1 ? ` · kişi başı ${fmtTL(c.total / people)}` : "") +
+    (c.unknown ? ` (+${c.unknown} malzemenin fiyatı yok)` : "");
+}
+const DIETS = {
+  "Dengeli": "Dengeli, çeşitli ev yemekleri; özel kısıt yok.",
+  "Yüksek protein": "Her öğünde kişi başı en az 30 g protein hedefle; yumurta, et, tavuk, balık, baklagil, yoğurt, peynir gibi protein kaynaklarını öne çıkar, karbonhidratı ölçülü tut.",
+  "Düşük karbonhidrat": "Kişi başı öğünde 25-30 g'ı geçmeyen karbonhidrat; makarna, pirinç, ekmek, patates, şeker kullanma ya da çok az kullan; sebze, protein ve sağlıklı yağ ağırlıklı.",
+  "Vejetaryen": "Et, tavuk, balık ve deniz ürünü yok; yumurta ve süt ürünleri serbest.",
+  "Vegan": "Hiçbir hayvansal ürün yok (et, balık, yumurta, süt, peynir, tereyağı, bal dahil).",
+  "Akdeniz": "Zeytinyağı, sebze, baklagil, tam tahıl ve balık ağırlıklı; kırmızı et az.",
+  "Kalori kontrollü": "Kişi başı öğün en fazla ~500 kcal; doyurucu ama hafif, kızartma ve ağır sos yok.",
+};
 // Claude bazen listede olmayan kategori adı verir (ör. "Et", "Sos & Yağ"); en yakın kategoriye eşle.
 function matchCat(c) {
   if (CATS.includes(c)) return c;
@@ -340,7 +387,8 @@ async function runBusy(key, fn) {
 const ITEM_RULES = `Her malzeme için: name (Türkçe, sade ürün adı, ilk harf büyük, marka yok; örn. "Spagetti makarna", "Domates"), qty (sayı), unit, category.
 unit yalnızca şunlardan biri: g, ml, adet, paket, demet, kutu, şişe. kg ise 1000 ile çarpıp g yaz; litre ise 1000 ile çarpıp ml yaz.
 Paket ürünlerde gramaj/hacim biliniyorsa onu kullan (ör. "2 paket 500 g makarna" → 1000 g). Yumurta, limon gibi sayılanlar adet.
-category yalnızca şunlardan biri: ${CATS.join(", ")}.`;
+category yalnızca şunlardan biri: ${CATS.join(", ")}.
+price: o satır için ödenen toplam tutar, TL cinsinden sayı (ör. 34.90). Satıra ait indirim görünüyorsa düşülmüş halini yaz. Fiyat görünmüyorsa ya da yazılmamışsa null.`;
 
 async function parseText() {
   const text = ui.text.trim();
@@ -349,7 +397,7 @@ async function parseText() {
     const out = await sample.json(
       `Kullanıcı evindeki yiyecek ve mutfak malzemelerini yazdı. Metindeki her malzemeyi çıkar.
 ${ITEM_RULES}
-Yalnızca JSON dizisi döndür, örnek: [{"name":"Spagetti makarna","qty":500,"unit":"g","category":"Kuru Gıda & Bakliyat"}]
+Yalnızca JSON dizisi döndür, örnek: [{"name":"Spagetti makarna","qty":500,"unit":"g","category":"Kuru Gıda & Bakliyat","price":34.9}]
 
 Metin:
 ${text}`, { modelTier: "quick" });
@@ -365,7 +413,7 @@ async function parseImages() {
 İndirim, toplam, KDV, poşet, kargo gibi satırları alma. Fişteki kısaltmaları yorumla (ör. "DOMATES KG 1,245" → 1245 g domates; "SUT 1L x2" → 2000 ml süt).
 ${ITEM_RULES}
 Ek alan food: yiyecek/içecek/mutfak malzemesiyse true, temizlik veya kişisel bakım ürünüyse false.
-Yalnızca JSON dizisi döndür, örnek: [{"name":"Domates","qty":1245,"unit":"g","category":"Sebze & Meyve","food":true}]`,
+Yalnızca JSON dizisi döndür, örnek: [{"name":"Domates","qty":1245,"unit":"g","category":"Sebze & Meyve","food":true,"price":49.8}]`,
       { images: ui.images.map(x => x.file), modelTier: "default" });
     debugLog("parse", { source: "img", raw: out });
     ui.review = toReview(out, "img");
@@ -375,7 +423,9 @@ function toReview(out, source) {
   const arr = Array.isArray(out) ? out : (out && Array.isArray(out.items) ? out.items : []);
   const rows = arr.filter(x => x && x.name).map(x => {
     const n = norm(x.qty, x.unit);
-    return { on: x.food !== false, name: String(x.name), qty: roundQty(n.qty || 1, n.unit), unit: n.unit, category: x.category };
+    const price = toNum(x.price);
+    return { on: x.food !== false, name: String(x.name), qty: roundQty(n.qty || 1, n.unit), unit: n.unit, category: x.category,
+      price: price > 0 ? Math.round(price * 100) / 100 : "" };
   });
   if (!rows.length) throw { message: "Listede malzeme bulunamadı. Metni ya da görseli kontrol et." };
   return { source, rows };
@@ -441,8 +491,12 @@ ${inventoryText()}
 
 Plan: ${st.days} gün, her gün şu öğünler: ${st.meals.join(", ")}. Kişi sayısı: ${st.people}.
 Son yapılan yemekler (tekrarlama): ${recent}
+Beslenme şekli: ${st.diet} — ${DIETS[st.diet] || DIETS["Dengeli"]}${st.dietNote.trim() ? `
+Kullanıcının ek tercihi: ${st.dietNote.trim()}` : ""}
 
 Kurallar:
+- Tüm seçenekler beslenme şekline ve ek tercihe uysun; uymayan malzemeyi dolapta olsa da kullanma.
+- nutrition: kişi başı yaklaşık besin değerleri (kcal, protein, carbs, fat; gram cinsinden), kullanılan malzeme miktarlarından hesapla.
 - Her öğün için birbirinden belirgin şekilde farklı ${st.options} seçenek öner (farklı ana malzeme ya da pişirme yöntemi). Seçenekler öncelikle dolaptaki malzemeleri kullansın.
 - Her günün ilk seçenekleri birlikte yapılırsa toplam kullanım dolaptaki miktarı aşmasın; günler ilerledikçe biten malzemeyi tekrar kullanma.
 - uses: dolaptan kullanılan malzemeler, ${st.people} kişilik gerçekçi miktarlar. itemId dolaptaki id ile birebir aynı olsun, unit o malzemenin dolaptaki birimi olsun.
@@ -451,7 +505,7 @@ Kurallar:
 - title kısa yemek adı, summary tek cümle.
 
 Yalnızca JSON döndür, şu yapıda:
-{"days":[{"meals":[{"meal":"Akşam","options":[{"title":"Domatesli makarna","summary":"Sarımsaklı domates sosuyla spagetti.","minutes":25,"servings":${st.people},"uses":[{"itemId":"abc","name":"Spagetti makarna","qty":500,"unit":"g"}],"extra":[{"name":"Fesleğen","amount":"birkaç yaprak"}]}]}]}]}
+{"days":[{"meals":[{"meal":"Akşam","options":[{"title":"Domatesli makarna","summary":"Sarımsaklı domates sosuyla spagetti.","minutes":25,"servings":${st.people},"uses":[{"itemId":"abc","name":"Spagetti makarna","qty":500,"unit":"g"}],"extra":[{"name":"Fesleğen","amount":"birkaç yaprak"}],"nutrition":{"kcal":520,"protein":17,"carbs":95,"fat":8}}]}]}]}
 days dizisinde tam ${st.days} gün, her günde sırasıyla ${st.meals.join(", ")} öğünleri olsun.`,
       { modelTier: "default" });
     const days = (out && Array.isArray(out.days) ? out.days : []).slice(0, st.days).map((d, i) => ({
@@ -463,12 +517,15 @@ days dizisinde tam ${st.days} gün, her günde sırasıyla ${st.meals.join(", ")
           servings: Number(o.servings) || st.people,
           uses: (Array.isArray(o.uses) ? o.uses : []).filter(u => u && (u.itemId || u.name)).map(u => ({ itemId: String(u.itemId || ""), name: String(u.name || ""), qty: Number(u.qty) || 0, unit: String(u.unit || "") })),
           extra: (Array.isArray(o.extra) ? o.extra : []).filter(x => x && x.name).map(x => ({ name: String(x.name), amount: String(x.amount || "") })),
+          nutrition: o.nutrition && typeof o.nutrition === "object" ? {
+            kcal: Math.round(toNum(o.nutrition.kcal)), protein: Math.round(toNum(o.nutrition.protein)),
+            carbs: Math.round(toNum(o.nutrition.carbs)), fat: Math.round(toNum(o.nutrition.fat)) } : null,
           steps: null,
         })),
       })).filter(m => m.options.length),
     })).filter(d => d.meals.length);
     if (!days.length) throw { message: "Plan oluşturulamadı. Tekrar dene." };
-    state.plan = { createdAt: Date.now(), invRev: state.invRev, people: st.people, days };
+    state.plan = { createdAt: Date.now(), invRev: state.invRev, people: st.people, diet: st.diet, dietNote: st.dietNote.trim(), days };
     ui.openSteps = {};
     commit(false);
   });
@@ -544,7 +601,7 @@ function applyCook() {
     const before = it.qty;
     const take = Math.min(q, it.qty);
     it.qty = roundQty(it.qty - take, it.unit);
-    used.push({ itemId: it.id, name: it.name, unit: it.unit, category: it.category, qty: take, before });
+    used.push({ itemId: it.id, name: it.name, unit: it.unit, category: it.category, qty: take, before, unitPrice: it.unitPrice || null });
     if (nearlyZero(it.qty, it.unit)) finished.push(it.name);
   }
   state.items = state.items.filter(i => !nearlyZero(i.qty, i.unit));
@@ -552,7 +609,8 @@ function applyCook() {
     const s = cook.source, slot = state.plan.days[s.d] && state.plan.days[s.d].meals[s.m];
     if (slot) slot.done = { option: s.o, people: cook.people };
   }
-  state.history.unshift({ id: uid(), title: cook.title, people: cook.people, at: Date.now(), used, source: cook.source });
+  const cost = costOfLines(used.map(u => ({ item: { unitPrice: u.unitPrice }, qty: u.qty })));
+  state.history.unshift({ id: uid(), title: cook.title, people: cook.people, at: Date.now(), used, source: cook.source, cost: cost.total || null });
   state.history = state.history.slice(0, 60);
   cook = null; renderModal();
   commit(true);
@@ -565,7 +623,11 @@ function undoHistory(id) {
   for (const u of e.used) {
     const it = state.items.find(i => i.id === u.itemId);
     if (it) it.qty = roundQty(it.qty + u.qty, it.unit);
-    else state.items.push({ id: u.itemId, name: u.name, unit: u.unit, category: u.category || "Diğer", qty: u.before });
+    else {
+      const restored = { id: u.itemId, name: u.name, unit: u.unit, category: u.category || "Diğer", qty: u.before };
+      if (u.unitPrice > 0) restored.unitPrice = u.unitPrice;
+      state.items.push(restored);
+    }
   }
   if (e.source && state.plan) {
     const slot = state.plan.days[e.source.d] && state.plan.days[e.source.d].meals[e.source.m];
@@ -585,6 +647,8 @@ function renderModal() {
     h("button", { type: "button", "aria-label": "Azalt", onclick: () => { if (cook.people > 1) { cook.people--; rebuildCookRows(); renderModal(); } } }, "−"),
     h("output", { id: "cook-people" }, cook.people),
     h("button", { type: "button", "aria-label": "Artır", onclick: () => { if (cook.people < 30) { cook.people++; rebuildCookRows(); renderModal(); } } }, "+"));
+  const cookCost = () => costText(costOfLines(cook.rows.map(r => ({ item: state.items.find(i => i.id === r.itemId), qty: toNum(r.use) }))), cook.people);
+  const costEl = h("div", { class: "uses" }, cookCost());
   const rows = cook.rows.map(r => {
     const it = state.items.find(i => i.id === r.itemId);
     const left = Math.max(0, it.qty - (Number(String(r.use).replace(",", ".")) || 0));
@@ -594,7 +658,8 @@ function renderModal() {
       h("input", { class: "qty", id: "use-" + r.itemId, inputmode: "decimal", value: String(r.use), "aria-label": it.name + " kullanılan miktar",
         oninput: e => { r.use = e.target.value; r.edited = true;
           const l = Math.max(0, it.qty - (Number(String(r.use).replace(",", ".")) || 0));
-          leftEl.textContent = nearlyZero(l, it.unit) ? "bitecek" : "kalan " + fmtQty(l, it.unit); } }),
+          leftEl.textContent = nearlyZero(l, it.unit) ? "bitecek" : "kalan " + fmtQty(l, it.unit);
+          costEl.textContent = cookCost(); } }),
       h("span", { class: "small muted" }, it.unit));
   });
   const sheet = h("div", { class: "sheet", role: "dialog", "aria-modal": "true", "aria-labelledby": "cook-title" },
@@ -603,6 +668,7 @@ function renderModal() {
     h("div", null,
       h("div", { class: "label" }, "Dolaptan düşülecek"),
       rows.length ? rows : h("p", { class: "muted" }, "Bu yemekte dolaptaki malzemelerden kullanım bulunamadı.")),
+    costEl,
     h("p", { class: "small muted" }, "Miktarları kişi sayısına göre hesapladım. Gerçekte kullandığın farklıysa kutulardan düzelt."),
     h("button", { class: "primary wide", type: "button", onclick: applyCook }, "Yaptım, dolaptan düş"));
   root.append(h("div", { class: "overlay", onclick: e => { if (e.target === e.currentTarget) close(); } }, sheet));
@@ -631,8 +697,10 @@ function viewDolap() {
     return out;
   }
   const cats = new Set(state.items.map(i => i.category));
+  const worth = costOfLines(state.items.map(i => ({ item: i, qty: i.qty })));
   out.push(h("div", { class: "row between" },
-    h("div", null, h("h2", null, plural(state.items.length, "malzeme")), h("div", { class: "small muted" }, plural(cats.size, "kategori"))),
+    h("div", null, h("h2", null, plural(state.items.length, "malzeme")), h("div", { class: "small muted" }, plural(cats.size, "kategori") +
+      (worth.total ? ` · yaklaşık ${fmtTL(worth.total)} değerinde` + (worth.unknown ? ` (${worth.unknown} malzemenin fiyatı yok)` : "") : ""))),
     h("button", { type: "button", onclick: () => go("menu") }, "Menü öner")));
   out.push(h("input", { class: "search", id: "q", type: "search", placeholder: "Dolapta ara", value: ui.query,
     oninput: e => { ui.query = e.target.value; renderList(); } }));
@@ -655,16 +723,20 @@ function renderList() {
     const g = h("div", { class: "group" }, h("h3", null, cat));
     for (const it of list) {
       if (ui.editing === it.id) {
-        const draft = { qty: it.qty, unit: it.unit, name: it.name };
+        const draft = { qty: it.qty, unit: it.unit, name: it.name, price: it.unitPrice > 0 ? Math.round(it.unitPrice * it.qty * 100) / 100 : "" };
         g.append(h("div", { class: "edit" },
           h("input", { class: "name", id: "en-" + it.id, value: it.name, "aria-label": "Ad", oninput: e => { draft.name = e.target.value; } }),
           h("input", { class: "qty", id: "eq-" + it.id, inputmode: "decimal", value: String(it.qty), "aria-label": "Miktar", oninput: e => { draft.qty = e.target.value; } }),
           h("select", { class: "unit", id: "eu-" + it.id, "aria-label": "Birim", onchange: e => { draft.unit = e.target.value; } },
             UNITS.map(u => h("option", { value: u, selected: u === it.unit }, u))),
+          h("label", { class: "row small muted", style: "width:100%" }, "Bu miktarın fiyatı",
+            h("input", { class: "qty", id: "ep-" + it.id, inputmode: "decimal", value: String(draft.price), placeholder: "₺", "aria-label": "Fiyat (TL)", oninput: e => { draft.price = e.target.value; } }), "₺"),
           h("div", { class: "row", style: "width:100%" },
             h("button", { class: "primary", type: "button", onclick: () => {
               const n = norm(draft.qty, draft.unit);
               it.name = draft.name.trim() || it.name; it.qty = roundQty(n.qty, n.unit); it.unit = n.unit;
+              const price = toNum(draft.price);
+              if (price > 0 && it.qty > 0) it.unitPrice = price / it.qty; else delete it.unitPrice;
               if (!(it.qty > 0)) state.items = state.items.filter(x => x !== it);
               ui.editing = null; commit(true); } }, "Kaydet"),
             h("button", { type: "button", onclick: () => { ui.editing = null; renderList(); } }, "Vazgeç"),
@@ -672,7 +744,7 @@ function renderList() {
               state.items = state.items.filter(x => x !== it); ui.editing = null; commit(true); toast(it.name + " dolaptan çıkarıldı."); } }, "Bitti, sil"))));
       } else {
         g.append(h("div", { class: "item" },
-          h("span", { class: "nm" }, it.name),
+          h("span", { class: "nm" }, it.name, it.unitPrice > 0 ? h("div", { class: "small muted" }, perLabel(it)) : null),
           h("span", { class: "q" }, fmtQty(it.qty, it.unit)),
           h("button", { type: "button", "aria-label": it.name + " düzenle", onclick: () => { ui.editing = it.id; renderList(); } }, "Düzenle")));
       }
@@ -681,7 +753,7 @@ function renderList() {
   }
 }
 function manualAdd() {
-  const d = { name: "", qty: "", unit: "g", category: "Diğer" };
+  const d = { name: "", qty: "", unit: "g", category: "Diğer", price: "" };
   return h("details", { class: "card" },
     h("summary", { style: "cursor:pointer;font-weight:600" }, "Elle tek malzeme ekle"),
     h("div", { class: "row" },
@@ -689,6 +761,8 @@ function manualAdd() {
       h("input", { class: "qty", id: "m-qty", inputmode: "decimal", placeholder: "1000", "aria-label": "Miktar", oninput: e => { d.qty = e.target.value; } }),
       h("select", { class: "unit", id: "m-unit", "aria-label": "Birim", onchange: e => { d.unit = e.target.value; } }, ["g", "kg", "ml", "l", "adet", "paket", "demet", "kutu", "şişe"].map(u => h("option", { value: u }, u)))),
     h("select", { id: "m-cat", "aria-label": "Kategori", onchange: e => { d.category = e.target.value; } }, CATS.map(c => h("option", { value: c, selected: c === "Diğer" }, c))),
+    h("label", { class: "row small muted" }, "Fiyatı (isteğe bağlı)",
+      h("input", { class: "qty", id: "m-price", inputmode: "decimal", placeholder: "₺", "aria-label": "Fiyat (TL)", oninput: e => { d.price = e.target.value; } }), "₺"),
     h("button", { class: "primary", type: "button", onclick: () => {
       if (!d.name.trim() || !(Number(String(d.qty).replace(",", ".")) > 0)) { toast("Ad ve miktar gir."); return; }
       addItems([d]); commit(true); toast(d.name.trim() + " eklendi."); } }, "Ekle"));
@@ -702,14 +776,16 @@ function viewEkle() {
     const n = rows.filter(r => r.on).length;
     out.push(h("div", { class: "card" },
       h("div", { class: "row between" }, h("h2", null, "Kontrol et"), h("span", { class: "small muted" }, plural(rows.length, "satır"))),
-      h("p", { class: "small muted" }, "Okuduklarımı düzeltebilir, istemediğin satırın işaretini kaldırabilirsin. Aynı isimli malzemeler dolaptakinin üstüne eklenir."),
+      h("p", { class: "small muted" }, "Okuduklarımı düzeltebilir, istemediğin satırın işaretini kaldırabilirsin. ₺ kutusu o satır için ödenen toplam tutar; yemek maliyeti buradan hesaplanır. Aynı isimli malzemeler dolaptakinin üstüne eklenir."),
       h("div", { class: "row" }, addBtn(n)),
       h("div", { class: "review" }, rows.map((r, i) => {
         const row = h("div", { class: "r" + (r.on ? "" : " off") },
           h("input", { type: "checkbox", id: "rv-on-" + i, checked: r.on, "aria-label": "Ekle", onchange: e => { r.on = e.target.checked; row.classList.toggle("off", !r.on); document.querySelectorAll(".add-btn").forEach(b => { b.textContent = `Dolaba ekle (${rows.filter(x => x.on).length})`; }); } }),
           h("input", { class: "name", id: "rv-n-" + i, value: r.name, "aria-label": "Ad", oninput: e => { r.name = e.target.value; } }),
           h("input", { class: "qty", id: "rv-q-" + i, inputmode: "decimal", value: String(r.qty), "aria-label": "Miktar", oninput: e => { r.qty = e.target.value; } }),
-          h("select", { class: "unit", id: "rv-u-" + i, "aria-label": "Birim", onchange: e => { r.unit = e.target.value; } }, UNITS.map(u => h("option", { value: u, selected: u === r.unit }, u))));
+          h("select", { class: "unit", id: "rv-u-" + i, "aria-label": "Birim", onchange: e => { r.unit = e.target.value; } }, UNITS.map(u => h("option", { value: u, selected: u === r.unit }, u))),
+          h("input", { class: "qty", id: "rv-p-" + i, inputmode: "decimal", value: String(r.price), placeholder: "₺", "aria-label": "Fiyat (TL)", oninput: e => { r.price = e.target.value; } }),
+          h("span", { class: "small muted" }, "₺"));
         return row;
       })),
       h("div", { class: "row" },
@@ -719,8 +795,8 @@ function viewEkle() {
   }
   out.push(h("div", { class: "card" },
     h("h2", null, "Yazarak ekle"),
-    h("p", { class: "small muted" }, "Dolabında ne varsa aklına geldiği gibi yaz. Miktarları kg, gr, adet, litre olarak yazabilirsin."),
-    h("textarea", { id: "txt", placeholder: "makarna 500 gr, domates 1 kg, sarımsak 1 kg, 10 yumurta, yarım litre süt", value: ui.text, oninput: e => { ui.text = e.target.value; } }),
+    h("p", { class: "small muted" }, "Dolabında ne varsa aklına geldiği gibi yaz. Miktarları kg, gr, adet, litre olarak; biliyorsan fiyatını da TL olarak yazabilirsin."),
+    h("textarea", { id: "txt", placeholder: "makarna 500 gr 35 TL, domates 1 kg 50 TL, sarımsak 1 kg, 10 yumurta, yarım litre süt", value: ui.text, oninput: e => { ui.text = e.target.value; } }),
     errFor("text"),
     busyBtn("text", "Listeyi çıkar", "Okuyorum…", parseText, { disabled: !sample })));
 
@@ -765,13 +841,19 @@ function viewMenu() {
       h("div", { class: "chips" }, MEALS.map(m => h("label", { class: "toggle" },
         h("input", { type: "checkbox", id: "meal-" + m, checked: st.meals.includes(m), onchange: e => {
           st.meals = MEALS.filter(x => x === m ? e.target.checked : st.meals.includes(x)); save(); } }), m)))),
-    h("div", { class: "small muted" }, `${st.days} gün × ${st.meals.length} öğün × ${st.options} seçenek, ${st.people} kişilik`),
+    h("div", { class: "stack" }, h("span", null, "Beslenme şekli"),
+      h("div", { class: "chips" }, Object.keys(DIETS).map(k => h("label", { class: "toggle" },
+        h("input", { type: "radio", name: "diet", id: "diet-" + k, checked: st.diet === k, onchange: () => { st.diet = k; save(); render(); } }), k))),
+      h("input", { id: "diet-note", placeholder: "Ek tercih (isteğe bağlı): ör. glutensiz, acı sevmem, laktoz yok", value: st.dietNote,
+        "aria-label": "Ek beslenme tercihi", oninput: e => { st.dietNote = e.target.value; save(); } })),
+    h("div", { class: "small muted" }, `${st.days} gün × ${st.meals.length} öğün × ${st.options} seçenek, ${st.people} kişilik, ${lower(st.diet)}`),
     errFor("plan"),
     busyBtn("plan", state.plan ? "Yeni menü öner" : "Menü öner", "Menü hazırlanıyor…", makePlan, { disabled: !sample })));
 
   const p = state.plan;
   if (p) {
     if (p.invRev !== state.invRev) out.push(h("div", { class: "notice info" }, "Dolap bu menüden sonra değişti. Güncel malzemelere göre yeni menü önerebilirsin."));
+    if (p.diet) out.push(h("div", { class: "small muted" }, `Bu menü: ${p.people} kişilik, ${lower(p.diet)}` + (p.dietNote ? ` (${p.dietNote})` : "") + ". Besin değerleri kişi başı ve yaklaşıktır."));
     p.days.forEach((day, d) => {
       out.push(h("section", { class: "day" },
         h("h2", null, day.label),
@@ -803,7 +885,17 @@ function optionCard(o, d, m, oi, slot) {
   return h("article", { class: "opt" + (cooked ? " cooked" : slot.done ? " faded" : "") },
     h("div", { class: "row between" }, h("h3", null, o.title), o.minutes ? h("span", { class: "small muted mono" }, o.minutes + " dk") : null),
     o.summary ? h("div", { class: "small" }, o.summary) : null,
+    o.nutrition && o.nutrition.kcal ? h("div", { class: "chips" },
+      h("span", { class: "chip" }, `${o.nutrition.kcal} kcal`),
+      h("span", { class: "chip" }, `Protein ${o.nutrition.protein} g`),
+      h("span", { class: "chip" }, `Karb. ${o.nutrition.carbs} g`),
+      h("span", { class: "chip" }, `Yağ ${o.nutrition.fat} g`)) : null,
     usesEl,
+    (() => {
+      const people = state.plan.people || state.settings.people;
+      const t = costText(costOfLines(o.uses.map(u => { const it = findItem(u); return { item: it, qty: it ? usedFor(u, it, people, o.servings) : 0 }; })), people);
+      return t ? h("div", { class: "uses" }, t) : null;
+    })(),
     (o.extra.length || missingNow.length) ? h("div", { class: "chips" },
       o.extra.map(x => h("span", { class: "chip warn" }, "Eksik: " + x.name)),
       missingNow.map(u => h("span", { class: "chip warn" }, "Bitti: " + u.name))) : null,
@@ -823,7 +915,7 @@ function viewGecmis() {
   const fmt = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
   return [h("h2", null, "Yaptıkların"), h("div", { class: "card" }, state.history.map(e => h("div", { class: "stack", style: "padding-block:8px;border-top:1px solid var(--line)" },
     h("div", { class: "row between" }, h("h3", null, e.title), h("span", { class: "small muted" }, fmt.format(e.at))),
-    h("div", { class: "uses" }, `${e.people} kişilik · `, e.used.length ? e.used.map((u, i) => [i ? ", " : "", h("b", null, u.name), " " + fmtQty(u.qty, u.unit)]) : "dolaptan bir şey düşülmedi"),
+    h("div", { class: "uses" }, `${e.people} kişilik · ` + (e.cost ? `≈ ${fmtTL(e.cost)} · ` : ""), e.used.length ? e.used.map((u, i) => [i ? ", " : "", h("b", null, u.name), " " + fmtQty(u.qty, u.unit)]) : "dolaptan bir şey düşülmedi"),
     h("div", null, h("button", { class: "ghost", type: "button", onclick: () => undoHistory(e.id) }, "Geri al")))))];
 }
 

@@ -1,0 +1,17 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://dolap-defteri-api.HESABIN.workers.dev"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

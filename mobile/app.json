@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Dolap Defteri",
+    "slug": "dolap-defteri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.dolapdefteri.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.dolapdefteri.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Market fişlerini ve sipariş ekran görüntülerini okuyup dolabına eklemek için fotoğraflarına erişir.",
+          "cameraPermission": "Market fişinin fotoğrafını çekip dolabına eklemek için kamerayı kullanır.",
+          "microphonePermission": false
+        }
+      ]
+    ]
+  }
+}

@@ -235,7 +235,7 @@ const plural = (n, w) => n + " " + w;
 const LS_KEY = "dolap-defteri-v1";
 const blank = () => ({
   items: [], plan: null, history: [], invRev: 0,
-  settings: { people: 4, days: 1, meals: ["Kahvaltı", "Öğle", "Akşam"] },
+  settings: { people: 4, days: 1, options: 3, meals: ["Kahvaltı", "Öğle", "Akşam"] },
 });
 let state = blank();
 const ui = {
@@ -388,7 +388,7 @@ Plan: ${st.days} gün, her gün şu öğünler: ${st.meals.join(", ")}. Kişi sa
 Son yapılan yemekler (tekrarlama): ${recent}
 
 Kurallar:
-- Her öğün için birbirinden farklı 2 seçenek öner. Seçenekler öncelikle dolaptaki malzemeleri kullansın.
+- Her öğün için birbirinden belirgin şekilde farklı ${st.options} seçenek öner (farklı ana malzeme ya da pişirme yöntemi). Seçenekler öncelikle dolaptaki malzemeleri kullansın.
 - Her günün ilk seçenekleri birlikte yapılırsa toplam kullanım dolaptaki miktarı aşmasın; günler ilerledikçe biten malzemeyi tekrar kullanma.
 - uses: dolaptan kullanılan malzemeler, ${st.people} kişilik gerçekçi miktarlar. itemId dolaptaki id ile birebir aynı olsun, unit o malzemenin dolaptaki birimi olsun.
 - extra: dolapta olmayan ama gereken malzemeler (tuz, karabiber, su hariç). Mümkünse boş bırak, en fazla 3 tane.
@@ -403,7 +403,7 @@ days dizisinde tam ${st.days} gün, her günde sırasıyla ${st.meals.join(", ")
       label: dayLabel(i, st.days),
       meals: (Array.isArray(d.meals) ? d.meals : []).map(m => ({
         meal: String(m.meal || ""), done: null,
-        options: (Array.isArray(m.options) ? m.options : []).slice(0, 3).map(o => ({
+        options: (Array.isArray(m.options) ? m.options : []).slice(0, 5).map(o => ({
           title: String(o.title || "Tarif"), summary: String(o.summary || ""), minutes: Number(o.minutes) || null,
           servings: Number(o.servings) || st.people,
           uses: (Array.isArray(o.uses) ? o.uses : []).filter(u => u && (u.itemId || u.name)).map(u => ({ itemId: String(u.itemId || ""), name: String(u.name || ""), qty: Number(u.qty) || 0, unit: String(u.unit || "") })),
@@ -704,11 +704,12 @@ function viewMenu() {
     h("h2", null, "Menü ayarları"),
     h("div", { class: "row between" }, h("span", null, "Kişi sayısı"), step("people", 1, 20)),
     h("div", { class: "row between" }, h("span", null, "Kaç günlük"), step("days", 1, 7)),
+    h("div", { class: "row between" }, h("span", null, "Öğün başına seçenek"), step("options", 2, 5)),
     h("div", { class: "stack" }, h("span", null, "Öğünler"),
       h("div", { class: "chips" }, MEALS.map(m => h("label", { class: "toggle" },
         h("input", { type: "checkbox", id: "meal-" + m, checked: st.meals.includes(m), onchange: e => {
           st.meals = MEALS.filter(x => x === m ? e.target.checked : st.meals.includes(x)); save(); } }), m)))),
-    h("div", { class: "small muted" }, `${st.days} gün × ${st.meals.length} öğün, ${st.people} kişilik`),
+    h("div", { class: "small muted" }, `${st.days} gün × ${st.meals.length} öğün × ${st.options} seçenek, ${st.people} kişilik`),
     errFor("plan"),
     busyBtn("plan", state.plan ? "Yeni menü öner" : "Menü öner", "Menü hazırlanıyor…", makePlan, { disabled: !sample })));
 

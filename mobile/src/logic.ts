@@ -63,7 +63,13 @@ export function fmtQty(q: number, unit: string) {
 /** Bu miktarın altı "bitti" sayılır. */
 export const nearlyZero = (q: number, unit: string) => (unit === 'g' || unit === 'ml' ? q < 5 : q < 0.25);
 
-export const normCategory = (c: unknown) => ((CATS as readonly string[]).includes(String(c)) ? String(c) : 'Diğer');
+// Claude bazen listede olmayan kategori adı verir (ör. "Et", "Sos & Yağ"); en yakın kategoriye eşle.
+export function normCategory(c: unknown) {
+  const s = String(c ?? '');
+  if ((CATS as readonly string[]).includes(s)) return s;
+  const words = lower(s).split(/[\s,&/]+/).filter(w => w.length > 1);
+  return CATS.find(k => words.some(w => lower(k).split(/[\s,&/]+/).includes(w))) ?? 'Diğer';
+}
 
 export type Draft = { name: string; qty: unknown; unit: unknown; category?: unknown };
 

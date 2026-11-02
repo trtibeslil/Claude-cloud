@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { addItems, CATS, fmtQty, lower, norm, perLabel, roundQty, UNITS, type Item } from '../logic';
+import { addItems, CATS, fmtQty, lower, norm, nudgeItem, perLabel, roundQty, swipeStep, UNITS, type Item } from '../logic';
 import { catColor } from './Pick';
 import { useStore } from '../store';
-import { Btn, Card, Field, Row, T, Toggle, useColors } from '../ui';
+import { Btn, Card, Field, Icon, Row, SwipeHint, SwipeRow, T, Toggle, useColors } from '../ui';
 
 export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
   const { state, update, toast } = useStore();
@@ -27,6 +27,21 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
   const q = lower(query);
   const items = state.items.filter(i => !q || lower(i.name).includes(q));
   const cats = new Set(state.items.map(i => i.category));
+  const { swipe, haptics } = state.settings;
+
+  const nudge = (it: Item, dir: 1 | -1) => {
+    const before = state.items;
+    const r = nudgeItem(state.items, it.id, dir);
+    update(s => ({ ...s, items: nudgeItem(s.items, it.id, dir).items, invRev: s.invRev + 1 }));
+    if (r.removed) {
+      toast(`${it.name} bitti, dolaptan çıkarıldı.`, {
+        label: 'Geri al',
+        onPress: () => { update(s => ({ ...s, items: s.items.some(i => i.id === it.id) ? s.items : [...s.items, before.find(i => i.id === it.id)!], invRev: s.invRev + 1 })); toast('Geri alındı.'); },
+      });
+    } else if (r.item) {
+      toast(`${it.name}: ${fmtQty(r.item.qty, r.item.unit)}`);
+    }
+  };
 
   return (
     <View style={{ gap: 16 }}>
@@ -38,6 +53,7 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
         <Btn title="Menü öner" onPress={() => go('menu')} />
       </Row>
       <Field placeholder="Dolapta ara" value={query} onChangeText={setQuery} style={{ flex: 0 }} clearButtonMode="while-editing" />
+      {swipe ? <SwipeHint right="artır" left="azalt" /> : null}
       <Card style={{ gap: 0 }}>
         {!items.length ? <T kind="small">Aramana uyan malzeme yok.</T> : null}
         {CATS.map(cat => {
@@ -52,14 +68,23 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
               {list.map((it, idx) => editing === it.id
                 ? <EditRow key={it.id} item={it} onDone={() => setEditing(null)} />
                 : (
-                  <Pressable key={it.id} onPress={() => setEditing(it.id)} accessibilityRole="button" accessibilityHint="Düzenlemek için dokun"
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: idx ? 1 : 0, borderColor: c.line, gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <T style={{ fontWeight: '600' }}>{it.name}</T>
-                      {it.unitPrice ? <T kind="small">{perLabel(it)}</T> : null}
-                    </View>
-                    <T kind="mono">{fmtQty(it.qty, it.unit)}</T>
-                  </Pressable>
+                  <View key={it.id} style={{ borderTopWidth: idx ? 1 : 0, borderColor: c.line }}>
+                    <SwipeRow enabled={swipe} haptics={haptics}
+                      rightLabel={'+' + fmtQty(swipeStep(it), it.unit)} leftLabel={'−' + fmtQty(swipeStep(it), it.unit)}
+                      onRight={() => nudge(it, 1)} onLeft={() => nudge(it, -1)}>
+                      <Pressable onPress={() => setEditing(it.id)} accessibilityRole="button" accessibilityLabel={`${it.name}, ${fmtQty(it.qty, it.unit)}`} accessibilityHint="Düzenlemek için dokun"
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, gap: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <T style={{ fontWeight: '600' }}>{it.name}</T>
+                          {it.unitPrice ? <T kind="small">{perLabel(it)}</T> : null}
+                        </View>
+                        <View style={{ backgroundColor: c.field, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                          <T kind="mono" style={{ fontSize: 13 }}>{fmtQty(it.qty, it.unit)}</T>
+                        </View>
+                        <Icon name="chevron-forward" size={16} color={c.muted} />
+                      </Pressable>
+                    </SwipeRow>
+                  </View>
                 ))}
             </View>
           );

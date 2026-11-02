@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { addItems, CAT_HUE, CATS, fmtTL, lower, norm, PRODUCTS, toNumber, type Product } from '../logic';
 import { useStore } from '../store';
-import { Btn, Card, Chip, Field, isDark, Row, T, Toggle, useColors, type Colors } from '../ui';
+import { Btn, Card, Chip, Field, Icon, isDark, Row, SwipeHint, SwipeRow, T, Toggle, useColors, type Colors } from '../ui';
 
 const INPUT_UNITS = ['kg', 'g', 'l', 'ml', 'adet', 'paket', 'demet', 'kutu', 'şişe'];
 const QUICK: Record<string, number[]> = {
@@ -44,6 +44,23 @@ export function PickCard({ go }: { go: (tab: 'dolap') => void }) {
     setOpen(null);
     toast(`${p.name} sepete eklendi.`);
   };
+  // Kaydırma: varsayılan miktar kadar sepete ekler / sepetten azaltır.
+  const { swipe, haptics } = state.settings;
+  const nudgeBasket = (p: Product, dir: 1 | -1) => {
+    const ex = basket.find(x => lower(x.name) === lower(p.name));
+    const same = ex && String(ex.unit) === p.unit;
+    const qty = Math.round(((same ? toNumber(ex.qty) : 0) + dir * p.q) * 100) / 100;
+    if (dir < 0 && !(qty > 0)) {
+      setBasket(b => b.filter(x => lower(x.name) !== lower(p.name)));
+      toast(`${p.name} sepetten çıkarıldı.`);
+      return;
+    }
+    setBasket(b => [...b.filter(x => lower(x.name) !== lower(p.name)),
+      { name: p.name, category: p.cat, qty: String(qty), unit: p.unit, price: same ? ex.price : '' }]);
+    toast(`${p.name} · sepette ${nf.format(qty)} ${p.unit}`);
+  };
+  const productOf = (name: string): Product => PRODUCTS.find(p => lower(p.name) === lower(name)) ?? { name, cat: 'Diğer', unit: 'adet', q: 1 };
+
   const confirm = () => {
     const res = addItems(state.items, basket); // yalnızca mesajdaki sayılar için
     update(s => ({ ...s, items: addItems(s.items, basket).items, invRev: s.invRev + 1 }));
@@ -76,21 +93,28 @@ export function PickCard({ go }: { go: (tab: 'dolap') => void }) {
         })}
       </ScrollView>
 
+      {swipe ? <SwipeHint right="sepete ekle" left="azalt" /> : null}
       <View>
         {list.map(p => {
           const inBasket = basket.some(b => lower(b.name) === lower(p.name));
           const isOpen = open === p.name;
           return (
             <View key={p.name} style={isOpen ? { backgroundColor: c.field, borderRadius: 14, marginVertical: 4 } : undefined}>
+              <SwipeRow enabled={swipe && !isOpen} haptics={haptics}
+                rightLabel={`+${nf.format(p.q)} ${p.unit}`} leftLabel={`−${nf.format(p.q)} ${p.unit}`}
+                onRight={() => nudgeBasket(p, 1)} onLeft={inBasket ? () => nudgeBasket(p, -1) : undefined}>
               <Pressable onPress={() => toggle(p)} accessibilityRole="button" accessibilityState={{ expanded: isOpen }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, minHeight: 46 }}>
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, minHeight: 48, backgroundColor: isOpen ? c.field : undefined, borderRadius: 14 }}>
                 <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: catColor(c, p.cat) }} />
                 <T style={{ flex: 1, fontWeight: '600' }}>
                   {p.custom ? `"${p.name}" ekle (listede yok)` : p.name}
                   {query && !p.custom ? <T kind="small"> · {p.cat}</T> : null}
                 </T>
-                {inBasket ? <Chip tone="done" text="Sepette" /> : <T color={c.accent} style={{ fontWeight: '800', fontSize: 18 }}>+</T>}
+                {inBasket
+                  ? <Chip tone="done" text={`Sepette · ${nf.format(toNumber(basket.find(b => lower(b.name) === lower(p.name))!.qty))} ${String(basket.find(b => lower(b.name) === lower(p.name))!.unit)}`} />
+                  : <Icon name="add-circle" size={26} color={c.accent} />}
               </Pressable>
+              </SwipeRow>
               {isOpen ? (
                 <View style={{ gap: 10, paddingHorizontal: 10, paddingBottom: 12 }}>
                   <Row>
@@ -119,11 +143,14 @@ export function PickCard({ go }: { go: (tab: 'dolap') => void }) {
         <View style={{ gap: 8, padding: 14, borderRadius: 18, backgroundColor: c.accentSoft }}>
           <T kind="label" color={c.accent}>Sepet · {basket.length} ürün</T>
           {basket.map((b, i) => (
-            <Row key={b.name + i} style={{ flexWrap: 'nowrap' }}>
-              <T style={{ flex: 1, fontWeight: '600' }}>{b.name}</T>
-              <T kind="mono">{nf.format(toNumber(b.qty))} {String(b.unit)}{toNumber(b.price) > 0 ? ` · ${fmtTL(toNumber(b.price))}` : ''}</T>
-              <Btn kind="ghost" title="Çıkar" onPress={() => setBasket(x => x.filter((_, j) => j !== i))} style={{ minHeight: 32 }} />
-            </Row>
+            <SwipeRow key={b.name + i} enabled={swipe} haptics={haptics} rightLabel="Artır" leftLabel="Çıkar"
+              onRight={() => nudgeBasket(productOf(b.name), 1)} onLeft={() => setBasket(x => x.filter((_, j) => j !== i))}>
+              <Row style={{ flexWrap: 'nowrap', paddingLeft: 10, paddingVertical: 2, backgroundColor: c.accentSoft }}>
+                <T style={{ flex: 1, fontWeight: '600' }}>{b.name}</T>
+                <T kind="mono">{nf.format(toNumber(b.qty))} {String(b.unit)}{toNumber(b.price) > 0 ? ` · ${fmtTL(toNumber(b.price))}` : ''}</T>
+                <Btn kind="ghost" title="Çıkar" onPress={() => setBasket(x => x.filter((_, j) => j !== i))} style={{ minHeight: 36 }} />
+              </Row>
+            </SwipeRow>
           ))}
           <Btn kind="primary" title={`Dolaba ekle (${basket.length})`} onPress={confirm} />
         </View>

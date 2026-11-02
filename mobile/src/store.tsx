@@ -9,12 +9,14 @@ type Ctx = {
   state: State;
   loaded: boolean;
   update: (fn: (s: State) => State) => void;
-  toast: (msg: string) => void;
-  toastMsg: string | null;
+  /** Kısa bildirim; isteğe bağlı tek düğmesi olur (ör. "Geri al"). */
+  toast: (msg: string, action?: ToastAction) => void;
+  toastMsg: { msg: string; action?: ToastAction } | null;
   /** Listeden seçilip henüz dolaba eklenmemiş ürünler; sekme değişince kaybolmasın diye burada, kaydedilmez. */
   basket: Draft[];
   setBasket: (fn: (b: Draft[]) => Draft[]) => void;
 };
+export type ToastAction = { label: string; onPress: () => void };
 const StoreCtx = createContext<Ctx | null>(null);
 
 function merged(raw: Partial<State> | null): State {
@@ -29,7 +31,7 @@ function merged(raw: Partial<State> | null): State {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(blankState);
   const [loaded, setLoaded] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ msg: string; action?: ToastAction } | null>(null);
   const [basket, setBasketState] = useState<Draft[]>([]);
   const setBasket = useCallback((fn: (b: Draft[]) => Draft[]) => setBasketState(fn), []);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,10 +48,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [state, loaded]);
 
   const update = useCallback((fn: (s: State) => State) => setState(fn), []);
-  const toast = useCallback((msg: string) => {
-    setToastMsg(msg);
+  const toast = useCallback((msg: string, action?: ToastAction) => {
+    setToastMsg({ msg, action });
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToastMsg(null), 4000);
+    timer.current = setTimeout(() => setToastMsg(null), action ? 6000 : 3500);
   }, []);
 
   return <StoreCtx.Provider value={{ state, loaded, update, toast, toastMsg, basket, setBasket }}>{children}</StoreCtx.Provider>;

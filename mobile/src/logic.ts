@@ -29,13 +29,14 @@ export type HistoryEntry = {
   id: string; title: string; people: number; at: number; used: UsedLine[];
   source: { d: number; m: number; o: number } | null;
 };
-export type Settings = { people: number; days: number; meals: string[]; options: number };
+// swipe: listelerde sağa/sola kaydırarak ekleme-azaltma; haptics: titreşimle geri bildirim
+export type Settings = { people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean };
 // aliases: fiş satırı (sadeleştirilmiş) → kullanıcının onayladığı ürün adı; telefonda fiş okuma bunlardan öğrenir.
 export type State = { items: Item[]; plan: Plan | null; history: HistoryEntry[]; invRev: number; settings: Settings; aliases: Record<string, string> };
 
 export const blankState = (): State => ({
   items: [], plan: null, history: [], invRev: 0, aliases: {},
-  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3 },
+  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true },
 });
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -130,6 +131,26 @@ export function addItems(items: Item[], list: Draft[]) {
     }
   }
   return { items: next, added, increased };
+}
+
+/** Bir kaydırmada eklenen/azaltılan miktar (temel birimde): katalogdaki varsayılan miktar, yoksa 250 g/ml ya da 1. */
+export function swipeStep(item: Pick<Item, 'name' | 'unit'>) {
+  const p = findProduct(item.name);
+  if (p) {
+    const n = norm(p.q, p.unit);
+    if (n.unit === item.unit && n.qty > 0) return n.qty;
+  }
+  return item.unit === 'g' || item.unit === 'ml' ? 250 : 1;
+}
+
+/** Dolaptaki malzemeyi bir adım artırır ya da azaltır; bitince çıkarır. */
+export function nudgeItem(items: Item[], id: string, dir: 1 | -1) {
+  const it = items.find(i => i.id === id);
+  if (!it) return { items, removed: null as Item | null, item: null as Item | null };
+  const qty = roundQty(it.qty + dir * swipeStep(it), it.unit);
+  if (dir < 0 && nearlyZero(qty, it.unit)) return { items: items.filter(i => i.id !== id), removed: it, item: null };
+  const next = { ...it, qty: Math.max(0, qty) };
+  return { items: items.map(i => (i.id === id ? next : i)), removed: null, item: next };
 }
 
 export function findItem(items: Item[], u: { itemId?: string; name?: string }) {

@@ -130,7 +130,7 @@ function OptionCard({ o, slot, oi, open, loading, error, disabled, onSteps, onCo
   const cooked = slot.done?.option === oi;
   const gone = o.uses.filter(u => !findItem(state.items, u));
   return (
-    <Card style={{ opacity: slot.done && !cooked ? 0.55 : 1, borderColor: cooked ? c.accent : c.line, borderWidth: cooked ? 2 : 1 }}>
+    <Card style={{ opacity: slot.done && !cooked ? 0.55 : 1, borderColor: c.fresh, borderWidth: cooked ? 2 : 0 }}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <T kind="h3" style={{ flex: 1 }}>{o.title}</T>
         {o.minutes ? <T kind="small">{o.minutes} dk</T> : null}

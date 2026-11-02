@@ -31,7 +31,8 @@
           "cameraPermission": "Market fişinin fotoğrafını çekip dolabına eklemek için kamerayı kullanır.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

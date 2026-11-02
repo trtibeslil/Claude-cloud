@@ -3,9 +3,11 @@ import { ActivityIndicator, View } from 'react-native';
 import * as api from '../api';
 import { dayLabel, findItem, fmtQty, lower, MEALS, norm, type Option, type Slot, type Use } from '../logic';
 import { evaluate, planMenu } from '../planner';
+import { favoriteFromOption, favoriteMeals, isFavorite, toggleFavorite } from '../favorites';
 import { catOf, RECIPES } from '../recipes';
+import { FavoritesCard } from './Favorites';
 import { useStore } from '../store';
-import { Btn, Card, Chip, Field, Notice, Row, Stepper, T, Toggle, useColors } from '../ui';
+import { Btn, Card, Chip, Field, IconBtn, Notice, Row, Stepper, T, Toggle, useColors } from '../ui';
 
 export type CookRequest = { title: string; servings: number; uses: Use[]; people: number; source: { d: number; m: number; o: number } | null };
 
@@ -90,6 +92,8 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
         {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir. Eksik malzemeler ayrıca gösterilir. Besin değerleri kişi başıdır ve USDA besin veritabanından (SR28) malzeme gramajlarına göre hesaplanır.</T> : null}
       </Card>
 
+      <FavoritesCard onCook={onCook} />
+
       {p && p.invRev !== state.invRev ? <Notice tone="info" text="Dolap bu menüden sonra değişti. Güncel malzemelere göre yeni menü önerebilirsin." /> : null}
 
       {p?.days.map((day, d) => (
@@ -102,7 +106,7 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
                 {slot.done ? <Chip tone="done" text={`Yapıldı · ${slot.done.people} kişi`} /> : null}
               </Row>
               {slot.options.map((o, oi) => (
-                <OptionCard key={oi} o={o} slot={slot} oi={oi} open={!!open[`${d}-${m}-${oi}`]}
+                <OptionCard key={oi} o={o} meal={slot.meal} slot={slot} oi={oi} open={!!open[`${d}-${m}-${oi}`]}
                   loading={busy === `steps:${d}-${m}-${oi}`} error={err?.key === `steps:${d}-${m}-${oi}` ? err.msg : null}
                   disabled={!!busy && busy !== `steps:${d}-${m}-${oi}`}
                   onSteps={() => loadSteps(d, m, oi)}
@@ -128,19 +132,26 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
   );
 }
 
-function OptionCard({ o, slot, oi, open, loading, error, disabled, onSteps, onCook }: {
-  o: Option; slot: Slot; oi: number; open: boolean; loading: boolean; error: string | null; disabled: boolean;
+function OptionCard({ o, meal, slot, oi, open, loading, error, disabled, onSteps, onCook }: {
+  o: Option; meal: string; slot: Slot; oi: number; open: boolean; loading: boolean; error: string | null; disabled: boolean;
   onSteps: () => void; onCook: () => void;
 }) {
-  const { state } = useStore();
+  const { state, update, toast } = useStore();
   const c = useColors();
   const cooked = slot.done?.option === oi;
+  const fav = isFavorite(state.favorites, o.title);
+  const toggleFav = () => {
+    update(s => ({ ...s, favorites: toggleFavorite(s.favorites, favoriteFromOption(o, favoriteMeals(RECIPES, o.title, meal))) }));
+    toast(fav ? `${o.title} favorilerden çıkarıldı.` : `${o.title} favorilere eklendi.`);
+  };
   const gone = o.uses.filter(u => !findItem(state.items, u));
   return (
     <Card style={{ opacity: slot.done && !cooked ? 0.55 : 1, borderColor: c.fresh, borderWidth: cooked ? 2 : 0 }}>
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <T kind="h3" style={{ flex: 1 }}>{o.title}</T>
         {o.minutes ? <T kind="small">{o.minutes} dk</T> : null}
+        <IconBtn name={fav ? 'heart' : 'heart-outline'} tone={fav ? 'accent' : 'plain'}
+          label={fav ? `${o.title} favorilerden çıkar` : `${o.title} favorilere ekle`} onPress={toggleFav} />
       </Row>
       {o.summary ? <T kind="small" color={c.ink}>{o.summary}</T> : null}
       {o.nutrition?.kcal ? (

@@ -33,11 +33,20 @@ export type HistoryEntry = {
 };
 // swipe: listelerde sağa/sola kaydırarak ekleme-azaltma; haptics: titreşimle geri bildirim
 export type Settings = { people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean };
+/** Favori tarif: menüden ya da tarif listesinden eklenir; meals hangi öğün sekmelerinde görüneceğini söyler. */
+export type Favorite = {
+  title: string; meals: string[]; minutes: number; servings: number;
+  uses: { name: string; qty: number; unit: string }[]; extra: { name: string; amount: string }[];
+  steps?: string[]; tip?: string; nutrition?: Option['nutrition']; at: number;
+};
 // aliases: fiş satırı (sadeleştirilmiş) → kullanıcının onayladığı ürün adı; telefonda fiş okuma bunlardan öğrenir.
-export type State = { items: Item[]; plan: Plan | null; history: HistoryEntry[]; invRev: number; settings: Settings; aliases: Record<string, string> };
+export type State = {
+  items: Item[]; plan: Plan | null; history: HistoryEntry[]; invRev: number; settings: Settings;
+  aliases: Record<string, string>; favorites: Favorite[];
+};
 
 export const blankState = (): State => ({
-  items: [], plan: null, history: [], invRev: 0, aliases: {},
+  items: [], plan: null, history: [], invRev: 0, aliases: {}, favorites: [],
   settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true },
 });
 

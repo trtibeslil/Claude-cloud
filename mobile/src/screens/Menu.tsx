@@ -87,7 +87,7 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
         {err?.key === 'plan' ? <Notice tone="err" text={err.msg} /> : null}
         <Btn kind="primary" title={busy === 'plan' ? 'Menü hazırlanıyor…' : p ? 'Yeni menü öner' : 'Menü öner'}
           busy={busy === 'plan'} disabled={!!busy} onPress={makePlan} />
-        {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir. Eksik malzemeler ayrıca gösterilir.</T> : null}
+        {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir. Eksik malzemeler ayrıca gösterilir. Besin değerleri kişi başıdır ve USDA besin veritabanından (SR28) malzeme gramajlarına göre hesaplanır.</T> : null}
       </Card>
 
       {p && p.invRev !== state.invRev ? <Notice tone="info" text="Dolap bu menüden sonra değişti. Güncel malzemelere göre yeni menü önerebilirsin." /> : null}

@@ -34,4 +34,20 @@ cd server && npm install && npm run typecheck
 
 Mobil uygulama `src/logic.ts` içindeki saf fonksiyonlarla dolap hesaplarını yapar (birim çevirme, birleştirme, düşme, geri alma); `src/api.ts` sunucuya istek atar. Sunucu her uç nokta için Claude'dan şemaya uygun JSON (structured outputs) ister.
 
+## Tarifler ve besin değerleri
+
+Mobil uygulama, sunucu ayarlı değilken menüyü uygulamaya gömülü 159 tariften önerir (`catalog/tarifler.py`). Kişi başı besin değerleri tahmin değil, malzeme gramajlarından hesaplanır:
+
+- Kaynak: U.S. Department of Agriculture, Agricultural Research Service. *USDA National Nutrient Database for Standard Reference, Release 28* (2015), kamu malı. Dosya npm'deki `fda-nutrient-database@1.0.2` paketinden alınır.
+- `catalog/besin.py` her malzemeyi SR28 kaydına bağlar ve `catalog/besin.json` tablosunu üretir (100 g başına kcal, protein, karbonhidrat, yağ). Adet/demet/paket için gram karşılığı, ml için yoğunluk, kılçıklı ve kemikli ürünlerde yenilebilir pay kullanılır. Derin yağda kızartmada yağın %15'i sayılır.
+- SR28'de birebir karşılığı olmayan 16 Türk ürünü (kaşar, beyaz peynir, sucuk, tarhana, mantı, simit…) en yakın gıdadan ya da bileşenlerinden yaklaşık hesaplanır ve `approx` olarak işaretlidir.
+
+```bash
+python3 catalog/besin.py <ABBREV.txt yolu>
+```
+
+```bash
+python3 catalog/tarifler.py
+```
+
 Telefonda yapay zekâsız fiş okuma hazır ama kapalı: [mobile/src/ocr/README.md](mobile/src/ocr/README.md).

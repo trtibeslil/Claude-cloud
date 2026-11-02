@@ -41,3 +41,13 @@ test('Plan dolaptakilere uygun tarifleri öne alır ve günler arasında tekrar 
 test('Dolap boşsa öneri çıkmaz', () => {
   assert.deepEqual(planMenu(recipes, [], opts), [{ meals: [] }]);
 });
+
+test('Besin değerleri USDA SR28 tablosundan hesaplanır (domatesli makarna, kişi başı)', () => {
+  const besin = JSON.parse(readFileSync(new URL('../../catalog/besin.json', import.meta.url), 'utf8'));
+  const r = recipes.find(x => x.t === 'Domatesli makarna')!;
+  // 500 g makarna + 500 g domates + 15 g sarımsak + 40 ml zeytinyağı (0,92 g/ml) + 1 demet fesleğen (30 g), 4 kişi
+  const g: Record<string, number> = { Spagetti: 500, Domates: 500, Sarımsak: 15, Zeytinyağı: 40 * 0.92, Fesleğen: 30 };
+  const kcal = Object.entries(g).reduce((t, [n, w]) => t + besin[n].kcal * w / 100, 0) / 4;
+  assert.equal(r.n[0], Math.round(kcal));
+  for (const x of recipes) assert.ok(x.n.length === 4 && x.n[0] > 0, x.t);
+});

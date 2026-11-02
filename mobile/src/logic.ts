@@ -32,7 +32,8 @@ export type HistoryEntry = {
   source: { d: number; m: number; o: number } | null;
 };
 // swipe: listelerde sağa/sola kaydırarak ekleme-azaltma; haptics: titreşimle geri bildirim
-export type Settings = { people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean };
+// palette: renk teması (ui.tsx PALETTES)
+export type Settings = { people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean; palette: string };
 /** Favori tarif: menüden ya da tarif listesinden eklenir; meals hangi öğün sekmelerinde görüneceğini söyler. */
 export type Favorite = {
   title: string; meals: string[]; minutes: number; servings: number;
@@ -47,7 +48,7 @@ export type State = {
 
 export const blankState = (): State => ({
   items: [], plan: null, history: [], invRev: 0, aliases: {}, favorites: [],
-  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true },
+  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true, palette: 'portakal' },
 });
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

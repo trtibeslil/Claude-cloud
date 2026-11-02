@@ -8,7 +8,7 @@ import { EkleScreen } from './src/screens/Ekle';
 import { GecmisScreen } from './src/screens/Gecmis';
 import { MenuScreen, type CookRequest } from './src/screens/Menu';
 import { StoreProvider, useStore } from './src/store';
-import { Card, Icon, IconBtn, isDark, Row, shadow, T, ThemeProvider, useColors, type IconName } from './src/ui';
+import { Card, Icon, IconBtn, isDark, PALETTES, Row, shadow, T, ThemeProvider, useColors, type IconName, type PaletteId } from './src/ui';
 
 type Tab = 'dolap' | 'ekle' | 'menu' | 'gecmis';
 const TABS: { key: Tab; label: string; icon: IconName; iconOn: IconName }[] = [
@@ -21,13 +21,17 @@ const TABS: { key: Tab; label: string; icon: IconName; iconOn: IconName }[] = [
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <StoreProvider>
-          <Main />
-        </StoreProvider>
-      </ThemeProvider>
+      <StoreProvider>
+        <Themed />
+      </StoreProvider>
     </SafeAreaProvider>
   );
+}
+
+/** Seçilen renk temasını uygular (tema ayarı uygulama durumunda saklanır). */
+function Themed() {
+  const { state } = useStore();
+  return <ThemeProvider palette={state.settings.palette}><Main /></ThemeProvider>;
 }
 
 function Main() {
@@ -124,6 +128,24 @@ function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }
             'Dolapta ve ürün listesinde bir satırı sağa kaydırınca eklenir, sola kaydırınca azaltılır. Dokunarak düzenleme her zaman açık.',
             st.swipe, v => set({ swipe: v }))}
           {row('Titreşimle geri bildirim', 'Kaydırma işlemi gerçekleşince telefon hafifçe titrer.', st.haptics, v => set({ haptics: v }))}
+        </Card>
+        <Card>
+          <T kind="label">Renk teması</T>
+          {(Object.keys(PALETTES) as PaletteId[]).map(id => {
+            const p = PALETTES[id], on = (st.palette || 'portakal') === id;
+            return (
+              <Pressable key={id} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => set({ palette: id })}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 16, backgroundColor: on ? c.accentSoft : 'transparent' }}>
+                <View style={{ flexDirection: 'row' }}>
+                  {[p.light.accent, p.light.accent2, p.light.bg].map((col, i) => (
+                    <View key={i} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: col, marginLeft: i ? -8 : 0, borderWidth: 2, borderColor: c.surface }} />
+                  ))}
+                </View>
+                <T style={{ flex: 1, fontWeight: on ? '700' : '500' }}>{p.name}</T>
+                {on ? <Icon name="checkmark-circle" size={22} color={c.accent} /> : null}
+              </Pressable>
+            );
+          })}
         </Card>
         <Card>
           <T kind="label">Kaydırma ne kadar ekler?</T>

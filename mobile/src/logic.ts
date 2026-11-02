@@ -30,10 +30,11 @@ export type HistoryEntry = {
   source: { d: number; m: number; o: number } | null;
 };
 export type Settings = { people: number; days: number; meals: string[]; options: number };
-export type State = { items: Item[]; plan: Plan | null; history: HistoryEntry[]; invRev: number; settings: Settings };
+// aliases: fiş satırı (sadeleştirilmiş) → kullanıcının onayladığı ürün adı; telefonda fiş okuma bunlardan öğrenir.
+export type State = { items: Item[]; plan: Plan | null; history: HistoryEntry[]; invRev: number; settings: Settings; aliases: Record<string, string> };
 
 export const blankState = (): State => ({
-  items: [], plan: null, history: [], invRev: 0,
+  items: [], plan: null, history: [], invRev: 0, aliases: {},
   settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3 },
 });
 

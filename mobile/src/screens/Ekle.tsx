@@ -7,6 +7,8 @@ import { addItems, norm, roundQty } from '../logic';
 import { useStore } from '../store';
 import { Btn, Card, Field, Notice, Row, T, useColors } from '../ui';
 import { UnitPicker } from './Dolap';
+import { OCR_ENABLED } from '../ocr/engine';
+import { OcrCard } from './OcrCard';
 import { PickCard } from './Pick';
 
 const MAX_IMAGES = 6;
@@ -107,6 +109,7 @@ export function EkleScreen({ go }: { go: (tab: 'dolap') => void }) {
   return (
     <View style={{ gap: 16 }}>
       <PickCard go={go} />
+      {OCR_ENABLED ? <OcrCard go={go} /> : null}
       {/* Yapay zekâ ile okuma yalnızca sunucu ayarlıysa görünür; kullanıcının yapay zekâ erişimi gerekmez. */}
       {apiConfigured() ? <>
       <Card>

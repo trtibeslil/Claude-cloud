@@ -5,6 +5,7 @@ Evdeki yiyecekleri takip eden ve onlarla yemek öneren, yapay zekâ destekli uyg
 ## Ne yapar?
 
 - **Dolap:** Evdeki malzemeleri kategorilere göre listeler, elle düzenleme ve silme yapılabilir.
+- **Listeden seç:** 22 kategoride 400'den fazla ürün (meyve, sebze, beyaz et, kırmızı et, şarküteri, süt ürünleri…). Ürünü bul, miktarını ve isteğe bağlı fiyatını gir, sepete ekle; sepeti tek seferde dolaba ekle. Yapay zekâ gerekmez.
 - **Ekle:** Market fişinin fotoğrafını çekebilir, online alışveriş sitesindeki "Siparişlerim" sayfasının ekran görüntüsünü (birden fazla da olabilir) yükleyebilir ya da malzemeleri serbest metinle yazabilirsin ("makarna 500 gr, domates 1 kg…"). Claude bunları okuyup listeye çevirir, sen kontrol edip onaylarsın.
 - **Menü:** Kişi sayısı, gün sayısı (1–7), öğünler (kahvaltı, öğle, akşam) ve öğün başına seçenek sayısına (2–5) göre öneri yapar. Dolapta olmayan malzemeler "Eksik" olarak işaretlenir.
 - **Bunu yapıyorum:** Kaç kişilik yaptığını sorar, kullanılan miktarları hesaplar (istersen düzeltirsin) ve dolaptan düşer. Biten malzemeler dolaptan çıkar ve sonraki menülerde kullanılmaz.
@@ -16,6 +17,7 @@ Evdeki yiyecekleri takip eden ve onlarla yemek öneren, yapay zekâ destekli uyg
 |---|---|
 | `mobile/` | iOS/Android uygulaması (Expo, React Native, TypeScript). Veriler telefonda saklanır. |
 | `server/` | Claude çağrılarını yapan küçük sunucu (Cloudflare Worker). Claude API anahtarı yalnızca burada durur. |
+| `catalog/` | Ürün kataloğu. `build.py` listeyi üretir (mobil ve sunucu kopyalarını da yazar), `inject.py` web sürümüne gömer. |
 | `dolap-defteri/` | claude.ai üzerinde çalışan web sürümü (tek HTML dosyası, Artifact olarak yayınlanır). |
 
 TestFlight'a koymak için adım adım rehber: [TESTFLIGHT.md](TESTFLIGHT.md).
@@ -31,3 +33,5 @@ cd server && npm install && npm run typecheck
 ```
 
 Mobil uygulama `src/logic.ts` içindeki saf fonksiyonlarla dolap hesaplarını yapar (birim çevirme, birleştirme, düşme, geri alma); `src/api.ts` sunucuya istek atar. Sunucu her uç nokta için Claude'dan şemaya uygun JSON (structured outputs) ister.
+
+Telefonda yapay zekâsız fiş okuma hazır ama kapalı: [mobile/src/ocr/README.md](mobile/src/ocr/README.md).

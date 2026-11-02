@@ -40,6 +40,8 @@ export type HistoryEntry = {
 export type Settings = {
   people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean; palette: string;
   levels: number[]; textScale: number;
+  /** Tariflerde Vikipedi/Commons'tan yemek fotoğrafı göster. */
+  photos: boolean;
 };
 /** Favori tarif: menüden ya da tarif listesinden eklenir; meals hangi öğün sekmelerinde görüneceğini söyler. */
 export type Favorite = {
@@ -55,7 +57,7 @@ export type State = {
 
 export const blankState = (): State => ({
   items: [], plan: null, history: [], invRev: 0, aliases: {}, favorites: [],
-  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true, palette: 'portakal', levels: [1, 2, 3], textScale: 1 },
+  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true, palette: 'portakal', levels: [1, 2, 3], textScale: 1, photos: true },
 });
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

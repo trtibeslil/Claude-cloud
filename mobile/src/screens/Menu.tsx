@@ -6,13 +6,18 @@ import { evaluate, planMenu } from '../planner';
 import { favoriteFromOption, favoriteMeals, isFavorite, toggleFavorite } from '../favorites';
 import { catOf, RECIPES } from '../recipes';
 import { FavoritesCard } from './Favorites';
+import { DishPhoto } from '../DishPhoto';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, IconBtn, Notice, Row, Stepper, T, Toggle, useColors } from '../ui';
 
 export const LEVELS: [number, string][] = [[1, 'Basit'], [2, 'Orta'], [3, 'Kompleks']];
 export const levelName = (z?: number) => LEVELS.find(([lv]) => lv === z)?.[1];
 
-export type CookRequest = { title: string; servings: number; uses: Use[]; people: number; source: { d: number; m: number; o: number } | null };
+export type CookRequest = {
+  title: string; servings: number; uses: Use[]; people: number; source: { d: number; m: number; o: number } | null;
+  /** Gömülü tarifte olmayan (yapay zekâ ya da favori) yemeklerin tarif bilgisi. */
+  steps?: string[]; tip?: string; minutes?: number; level?: 1 | 2 | 3; extra?: { name: string; amount: string }[];
+};
 
 export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
   const { state, update } = useStore();
@@ -124,7 +129,7 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
                   loading={busy === `steps:${d}-${m}-${oi}`} error={err?.key === `steps:${d}-${m}-${oi}` ? err.msg : null}
                   disabled={!!busy && busy !== `steps:${d}-${m}-${oi}`}
                   onSteps={() => loadSteps(d, m, oi)}
-                  onCook={() => onCook({ title: o.title, servings: o.servings, uses: o.uses, people: p.people || st.people, source: { d, m, o: oi } })} />
+                  onCook={() => onCook({ title: o.title, servings: o.servings, uses: o.uses, people: p.people || st.people, source: { d, m, o: oi }, steps: o.steps, tip: o.tip, minutes: o.minutes, level: o.level, extra: o.extra })} />
               ))}
             </View>
           ))}
@@ -161,6 +166,7 @@ function OptionCard({ o, meal, slot, oi, open, loading, error, disabled, onSteps
   const gone = o.uses.filter(u => !findItem(state.items, u));
   return (
     <Card style={{ opacity: slot.done && !cooked ? 0.55 : 1, borderColor: c.fresh, borderWidth: cooked ? 2 : 0 }}>
+      <DishPhoto title={o.title} height={160} radius={16} placeholder={false} />
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <T kind="h3" style={{ flex: 1 }}>{o.title}</T>
         {o.minutes ? <T kind="small">{o.minutes} dk</T> : null}

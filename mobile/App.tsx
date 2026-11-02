@@ -148,6 +148,12 @@ function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }
           {row('Titreşimle geri bildirim', 'Kaydırma işlemi gerçekleşince telefon hafifçe titrer.', st.haptics, v => set({ haptics: v }))}
         </Card>
         <Card>
+          <T kind="label">Tarifler</T>
+          {row('Yemek fotoğrafları',
+            'Tarif kartlarında ve tarif ekranında yemeğin gerçek fotoğrafı gösterilir. Fotoğraflar Vikipedi maddelerinden, Wikimedia Commons\'ta özgür lisanslı olanlardan alınır; fotoğrafçı ve lisans altında yazar. İnternet gerekir, bir kez inen fotoğraf telefonda saklanır. Yanlış bir fotoğrafın altındaki yazıya uzun basarsan bir daha gösterilmez.',
+            st.photos !== false, v => set({ photos: v }))}
+        </Card>
+        <Card>
           <T kind="label">Yazı boyutu</T>
           <T kind="small">Tüm metin ve düğmeler büyür. Başlıktaki A− ve A+ ile de değiştirebilirsin.</T>
           <Row style={{ gap: 6 }}>

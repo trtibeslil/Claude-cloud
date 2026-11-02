@@ -78,7 +78,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
             <Row>
               {f.steps?.length ? <Btn title={isOpen ? 'Tarifi gizle' : 'Tarif'} onPress={() => setOpen(isOpen ? null : favKey(f.title))} /> : null}
               <Btn kind="primary" title="Bunu yapıyorum" disabled={!uses.length}
-                onPress={() => onCook({ title: f.title, servings: people, uses, people, source: null })} />
+                onPress={() => onCook({ title: f.title, servings: people, uses, people, source: null, steps: f.steps, tip: f.tip, minutes: f.minutes, level: f.level })} />
             </Row>
           </View>
         );

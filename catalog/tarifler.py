@@ -198,6 +198,14 @@ for line, level in lines:
         "tags": [t for t in tags.split(",") if t], "i": ing,
         "s": [x.strip() for x in steps.split(" / ")], "z": z, **({"p": tip} if tip else {}),
     })
+# Ayrıntılı adımlar: sık önerilen günlük yemeklerin kısa adımları detay.txt'deki ayrıntılı haliyle değiştirilir.
+for line in (root / "detay.txt").read_text().strip().splitlines():
+    title, steps, tip = [x.strip() for x in line.split("|")]
+    r = next((x for x in recipes if x["t"] == title), None)
+    assert r, f"detay.txt: '{title}' tariflerde yok"
+    r["s"] = [x.strip() for x in steps.split(" / ")]
+    r["p"] = tip
+
 assert len({r["t"] for r in recipes}) == len(recipes)
 assert orta <= {r["t"] for r in recipes}, orta - {r["t"] for r in recipes}
 

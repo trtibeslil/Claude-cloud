@@ -8,7 +8,7 @@ Evdeki yiyecekleri takip eden ve onlarla yemek öneren, yapay zekâ destekli uyg
 - **Listeden seç:** 22 kategoride 400'den fazla ürün (meyve, sebze, beyaz et, kırmızı et, şarküteri, süt ürünleri…). Ürünü bul, miktarını ve isteğe bağlı fiyatını gir, sepete ekle; sepeti tek seferde dolaba ekle. Yapay zekâ gerekmez.
 - **Ekle:** Market fişinin fotoğrafını çekebilir, online alışveriş sitesindeki "Siparişlerim" sayfasının ekran görüntüsünü (birden fazla da olabilir) yükleyebilir ya da malzemeleri serbest metinle yazabilirsin ("makarna 500 gr, domates 1 kg…"). Claude bunları okuyup listeye çevirir, sen kontrol edip onaylarsın.
 - **Menü:** Kişi sayısı, gün sayısı (1–7), öğünler (kahvaltı, öğle, akşam) ve öğün başına seçenek sayısına (2–5) göre öneri yapar. Dolapta olmayan malzemeler "Eksik" olarak işaretlenir.
-- **Bunu yapıyorum:** Kaç kişilik yaptığını sorar, kullanılan miktarları hesaplar (istersen düzeltirsin) ve dolaptan düşer. Biten malzemeler dolaptan çıkar ve sonraki menülerde kullanılmaz.
+- **Bunu yapıyorum:** Tarif ekranı açılır: yemeğin fotoğrafı, kişi sayısına göre malzemeler (dolapta / evde var sayılır / eksik), hazırlık (ıslatma, eti oda sıcaklığına getirme, fırını ısıtma…), dokunarak işaretlenen adımlar ve püf noktası. Sonunda kaç kişilik yaptığını sorar, kullanılan miktarları hesaplar (istersen düzeltirsin) ve dolaptan düşer. Biten malzemeler dolaptan çıkar ve sonraki menülerde kullanılmaz.
 - **Geçmiş:** Yapılan yemekler listelenir; "Geri al" malzemeleri dolaba geri koyar.
 
 ## Klasörler
@@ -60,5 +60,9 @@ python3 catalog/tarifler.py
 - **Evde var sayılanlar:** zeytinyağı, ayçiçek yağı, mısırözü yağı, tuz, karabiber, kimyon, toz ve pul biber, un ve her türlü makarna. Dolapta kayıtlı olmasa da mevcut sayılır, "eksik" gösterilmez; kayıtlıysa dolaptan düşülür.
 - Dolaptaki asıl malzemelerden daha çoğunu kullanan tarif öne geçer; son yapılanlar ve aynı plandaki tekrarlar geriye düşer.
 - Eşdeğer ürünler birbirinin yerine geçer (makarna, pirinç, bulgur, kıyma, domates türleri…).
+
+### Yemek fotoğrafları
+
+Telefon, yemeğin Türkçe Vikipedi maddesindeki ana fotoğrafı çeker (`mobile/src/photos.ts`). Yalnızca Wikimedia Commons'ta özgür lisanslı fotoğraflar kullanılır; fotoğrafçı ve lisans fotoğrafın altında yazar, dokununca kaynak sayfası açılır. Yemek maddesi olmayan sayfalar (ör. Menemen ilçesi) kategorilerinden elenir; harita, logo ve çizimler alınmaz. Bulunan fotoğraf telefonda saklanır. Yanlış fotoğrafın altındaki yazıya uzun basınca bir daha gösterilmez; Ayarlar'dan fotoğraflar tamamen kapatılabilir.
 
 Telefonda yapay zekâsız fiş okuma hazır ama kapalı: [mobile/src/ocr/README.md](mobile/src/ocr/README.md).

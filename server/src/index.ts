@@ -3,6 +3,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import categories from "./categories.json";
 
 interface Env {
   ANTHROPIC_API_KEY: string;
@@ -11,10 +12,8 @@ interface Env {
 
 const MODEL = "claude-opus-5-5";
 
-const CATS = [
-  "Sebze & Meyve", "Et, Tavuk & Balık", "Süt & Kahvaltılık", "Kuru Gıda & Bakliyat",
-  "Baharat, Sos & Yağ", "Donuk", "İçecek", "Diğer",
-] as const;
+// Ürün kataloğunun kategorileri (catalog/build.py üretir)
+const CATS: string[] = categories;
 
 /* ---------- çıktı şemaları ---------- */
 const Item = z.object({

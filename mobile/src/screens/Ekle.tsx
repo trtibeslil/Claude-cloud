@@ -7,6 +7,7 @@ import { addItems, norm, roundQty } from '../logic';
 import { useStore } from '../store';
 import { Btn, Card, Field, Notice, Row, T, useColors } from '../ui';
 import { UnitPicker } from './Dolap';
+import { PickCard } from './Pick';
 
 const MAX_IMAGES = 6;
 const MAX_EDGE = 1568; // Claude görselleri zaten bu boyuta küçültür; daha büyüğü yalnızca yüklemeyi yavaşlatır
@@ -105,7 +106,9 @@ export function EkleScreen({ go }: { go: (tab: 'dolap') => void }) {
 
   return (
     <View style={{ gap: 16 }}>
-      {!apiConfigured() ? <Notice text="Sunucu adresi ayarlanmamış; fiş okuma ve öneriler çalışmaz. Kurulum için README'ye bak." /> : null}
+      <PickCard go={go} />
+      {/* Yapay zekâ ile okuma yalnızca sunucu ayarlıysa görünür; kullanıcının yapay zekâ erişimi gerekmez. */}
+      {apiConfigured() ? <>
       <Card>
         <T kind="h2">Fiş veya sipariş ekran görüntüsü</T>
         <T kind="small">Market fişinin fotoğrafını çek ya da online alışveriş sitesindeki "Siparişlerim" sayfasının ekran görüntüsünü seç. Uzun siparişlerde birkaç ekran görüntüsünü birlikte seçebilirsin.</T>
@@ -146,6 +149,7 @@ export function EkleScreen({ go }: { go: (tab: 'dolap') => void }) {
           disabled={!text.trim() || !!busy || !apiConfigured()}
           onPress={() => run('text', async () => toReview((await parseText(text.trim())).items, 'text'))} />
       </Card>
+      </> : null}
     </View>
   );
 }

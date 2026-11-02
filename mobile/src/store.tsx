@@ -1,7 +1,7 @@
 // Uygulama durumu: telefonda (AsyncStorage) saklanır, her değişiklikte kaydedilir.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { blankState, type State } from './logic';
+import { blankState, categoryFor, CATS, type Draft, type State } from './logic';
 
 const KEY = 'dolap-defteri-v1';
 
@@ -11,19 +11,27 @@ type Ctx = {
   update: (fn: (s: State) => State) => void;
   toast: (msg: string) => void;
   toastMsg: string | null;
+  /** Listeden seçilip henüz dolaba eklenmemiş ürünler; sekme değişince kaybolmasın diye burada, kaydedilmez. */
+  basket: Draft[];
+  setBasket: (fn: (b: Draft[]) => Draft[]) => void;
 };
 const StoreCtx = createContext<Ctx | null>(null);
 
 function merged(raw: Partial<State> | null): State {
   const b = blankState();
   if (!raw) return b;
-  return { ...b, ...raw, settings: { ...b.settings, ...raw.settings } };
+  const m = { ...b, ...raw, settings: { ...b.settings, ...raw.settings } };
+  // Eski kategori adları ve "Diğer"e düşmüş katalog ürünleri yeni kategorilere taşınır.
+  m.items = (m.items ?? []).map(i => (CATS.includes(i.category) && i.category !== 'Diğer' ? i : { ...i, category: categoryFor(i.name, i.category) }));
+  return m;
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(blankState);
   const [loaded, setLoaded] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [basket, setBasketState] = useState<Draft[]>([]);
+  const setBasket = useCallback((fn: (b: Draft[]) => Draft[]) => setBasketState(fn), []);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -44,7 +52,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     timer.current = setTimeout(() => setToastMsg(null), 4000);
   }, []);
 
-  return <StoreCtx.Provider value={{ state, loaded, update, toast, toastMsg }}>{children}</StoreCtx.Provider>;
+  return <StoreCtx.Provider value={{ state, loaded, update, toast, toastMsg, basket, setBasket }}>{children}</StoreCtx.Provider>;
 }
 
 export function useStore() {

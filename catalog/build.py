@@ -1,4 +1,5 @@
-# Ürün kataloğunu üretir: python3 build.py  ->  urunler.json
+# Ürün kataloğunu üretir: python3 catalog/build.py  ->  catalog/urunler.json, mobile/src/urunler.json, server/src/categories.json
+# Web sürümüne gömmek için ardından: python3 catalog/inject.py
 # Satır biçimi: "Ad | birim | varsayılan miktar"  (birim: kg, g, l, ml, adet, paket, demet, kutu, şişe)
 import json
 
@@ -108,7 +109,12 @@ dups = {n for n in names if names.count(n) > 1}
 assert not dups, dups
 keys = {k for k, _, _ in CATS}
 assert all(i[1] in keys for i in items)
-json.dump({"cats": [{"k": k, "n": n, "h": h} for k, n, h in CATS], "items": items},
-          open("urunler.json", "w"), ensure_ascii=False, separators=(",", ":"))
+import pathlib
+here = pathlib.Path(__file__).resolve().parent
+data = {"cats": [{"k": k, "n": n, "h": h} for k, n, h in CATS], "items": items}
+# Tek kaynak burası; mobil uygulama ve sunucu kendi kopyalarını kullanır (Metro ve Worker proje dışını paketlemez).
+for target in [here / "urunler.json", here.parent / "mobile/src/urunler.json"]:
+    target.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
+(here.parent / "server/src/categories.json").write_text(json.dumps([n for _, n, _ in CATS], ensure_ascii=False))
 print(len(items), "ürün,", len(CATS), "kategori")
 for k, n, _ in CATS: print(f"  {n}: {sum(1 for i in items if i[1]==k)}")

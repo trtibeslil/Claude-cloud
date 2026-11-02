@@ -3,13 +3,19 @@
 
 export const UNITS = ['g', 'ml', 'adet', 'paket', 'demet', 'kutu', 'şişe'] as const;
 export type Unit = (typeof UNITS)[number];
-export const CATS = [
-  'Sebze & Meyve', 'Et, Tavuk & Balık', 'Süt & Kahvaltılık', 'Kuru Gıda & Bakliyat',
-  'Baharat, Sos & Yağ', 'Donuk', 'İçecek', 'Diğer',
-] as const;
+import catalog from './urunler.json';
+
+// Ürün kataloğu: catalog/build.py üretir, buraya kopyalar.
+export const CATS: string[] = catalog.cats.map(c => c.n);
+export const CAT_HUE: Record<string, number> = Object.fromEntries(catalog.cats.map(c => [c.n, c.h]));
+const CAT_BY_KEY: Record<string, string> = Object.fromEntries(catalog.cats.map(c => [c.k, c.n]));
+export type Product = { name: string; cat: string; unit: string; q: number };
+export const PRODUCTS: Product[] = (catalog.items as [string, string, string, number][])
+  .map(([name, k, unit, q]) => ({ name, cat: CAT_BY_KEY[k], unit, q }));
 export const MEALS = ['Kahvaltı', 'Öğle', 'Akşam'] as const;
 
-export type Item = { id: string; name: string; qty: number; unit: Unit; category: string };
+// unitPrice: TL / g, ml ya da adet (fiyat biliniyorsa)
+export type Item = { id: string; name: string; qty: number; unit: Unit; category: string; unitPrice?: number };
 export type Use = { itemId: string; name: string; qty: number; unit: string };
 export type Option = {
   title: string; summary: string; minutes: number; servings: number;
@@ -63,15 +69,41 @@ export function fmtQty(q: number, unit: string) {
 /** Bu miktarın altı "bitti" sayılır. */
 export const nearlyZero = (q: number, unit: string) => (unit === 'g' || unit === 'ml' ? q < 5 : q < 0.25);
 
+const PRODUCT_BY_NAME = new Map(PRODUCTS.map(p => [lower(p.name), p]));
+export const findProduct = (name: string) => PRODUCT_BY_NAME.get(lower(name));
+// Eski sürümlerin kategori adları → katalog kategorileri
+const OLD_CATS: Record<string, string> = {
+  'Sebze & Meyve': 'Sebze', 'Et, Tavuk & Balık': 'Kırmızı Et', 'Süt & Kahvaltılık': 'Süt & Süt Ürünleri',
+  'Kuru Gıda & Bakliyat': 'Bakliyat', 'Baharat, Sos & Yağ': 'Sos, Salça & Konserve', 'Donuk': 'Dondurulmuş',
+};
 // Claude bazen listede olmayan kategori adı verir (ör. "Et", "Sos & Yağ"); en yakın kategoriye eşle.
 export function normCategory(c: unknown) {
   const s = String(c ?? '');
-  if ((CATS as readonly string[]).includes(s)) return s;
+  if (CATS.includes(s)) return s;
+  if (OLD_CATS[s]) return OLD_CATS[s];
   const words = lower(s).split(/[\s,&/]+/).filter(w => w.length > 1);
   return CATS.find(k => words.some(w => lower(k).split(/[\s,&/]+/).includes(w))) ?? 'Diğer';
 }
+/** Katalogdaki ürünün kategorisi önce gelir; yoksa verilen kategori normalleştirilir. */
+export const categoryFor = (name: string, cat?: unknown) => findProduct(name)?.cat ?? normCategory(cat);
 
-export type Draft = { name: string; qty: unknown; unit: unknown; category?: unknown };
+/** Eski ve yeni partinin miktara göre ağırlıklı ortalama birim fiyatı. */
+export function mergePrice(oldQty: number, oldUp: number | undefined, addQty: number, addUp: number | undefined) {
+  if (!(addUp && addUp > 0)) return oldUp;
+  if (!(oldUp && oldUp > 0)) return addUp;
+  return (oldQty * oldUp + addQty * addUp) / (oldQty + addQty);
+}
+const money = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 2 });
+export const fmtTL = (v: number) => money.format(Math.round(v * 100) / 100);
+export function perLabel(it: Item) {
+  if (!(it.unitPrice && it.unitPrice > 0)) return '';
+  if (it.unit === 'g') return fmtTL(it.unitPrice * 1000) + '/kg';
+  if (it.unit === 'ml') return fmtTL(it.unitPrice * 1000) + '/L';
+  return fmtTL(it.unitPrice) + '/' + it.unit;
+}
+
+/** price: o satır için ödenen toplam tutar (TL), isteğe bağlı. */
+export type Draft = { name: string; qty: unknown; unit: unknown; category?: unknown; price?: unknown };
 
 /** Yeni malzemeleri dolaba ekler; aynı ad ve birimdeki malzemenin üstüne koyar. */
 export function addItems(items: Item[], list: Draft[]) {
@@ -81,10 +113,18 @@ export function addItems(items: Item[], list: Draft[]) {
     const n = norm(raw.qty, raw.unit);
     const name = String(raw.name ?? '').trim();
     if (!name || !(n.qty > 0)) continue;
+    const price = toNumber(raw.price);
+    const up = price > 0 ? price / n.qty : undefined;
     const ex = next.find(i => lower(i.name) === lower(name) && i.unit === n.unit);
-    if (ex) { ex.qty = roundQty(ex.qty + n.qty, n.unit); increased++; }
-    else {
-      next.push({ id: uid(), name, qty: roundQty(n.qty, n.unit), unit: n.unit, category: normCategory(raw.category) });
+    if (ex) {
+      const p = mergePrice(ex.qty, ex.unitPrice, n.qty, up);
+      ex.qty = roundQty(ex.qty + n.qty, n.unit);
+      if (p) ex.unitPrice = p;
+      increased++;
+    } else {
+      const it: Item = { id: uid(), name, qty: roundQty(n.qty, n.unit), unit: n.unit, category: categoryFor(name, raw.category) };
+      if (up) it.unitPrice = up;
+      next.push(it);
       added++;
     }
   }

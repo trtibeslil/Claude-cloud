@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import { addItems, CATS, fmtQty, lower, norm, roundQty, UNITS, type Item } from '../logic';
+import { addItems, CATS, fmtQty, lower, norm, perLabel, roundQty, UNITS, type Item } from '../logic';
+import { catColor } from './Pick';
 import { useStore } from '../store';
 import { Btn, Card, Field, Row, T, Toggle, useColors } from '../ui';
 
@@ -15,7 +16,7 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
       <View style={{ gap: 16 }}>
         <Card style={{ alignItems: 'center', paddingVertical: 28 }}>
           <T kind="h2">Dolabın boş görünüyor</T>
-          <T kind="small" style={{ textAlign: 'center' }}>Evdekileri yazarak, market fişinin fotoğrafını ya da sipariş ekranının görüntüsünü yükleyerek başla.</T>
+          <T kind="small" style={{ textAlign: 'center' }}>Aldıklarını ürün listesinden seçerek başla: meyve, sebze, et, şarküteri ve daha fazlası.</T>
           <Btn kind="primary" title="Malzeme ekle" onPress={() => go('ekle')} />
         </Card>
         <ManualAdd />
@@ -44,13 +45,19 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
           if (!list.length) return null;
           return (
             <View key={cat}>
-              <T kind="small" style={{ fontWeight: '600', paddingTop: 12, paddingBottom: 4 }}>{cat}</T>
+              <Row style={{ paddingTop: 14, paddingBottom: 4 }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: catColor(c, cat) }} />
+                <T kind="label">{cat}</T>
+              </Row>
               {list.map((it, idx) => editing === it.id
                 ? <EditRow key={it.id} item={it} onDone={() => setEditing(null)} />
                 : (
                   <Pressable key={it.id} onPress={() => setEditing(it.id)} accessibilityRole="button" accessibilityHint="Düzenlemek için dokun"
                     style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: idx ? 1 : 0, borderColor: c.line, gap: 10 }}>
-                    <T style={{ flex: 1 }}>{it.name}</T>
+                    <View style={{ flex: 1 }}>
+                      <T style={{ fontWeight: '600' }}>{it.name}</T>
+                      {it.unitPrice ? <T kind="small">{perLabel(it)}</T> : null}
+                    </View>
                     <T kind="mono">{fmtQty(it.qty, it.unit)}</T>
                   </Pressable>
                 ))}

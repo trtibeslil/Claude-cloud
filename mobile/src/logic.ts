@@ -25,6 +25,8 @@ export type Option = {
   nutrition?: { kcal: number; protein: number; carbs: number; fat: number } | null;
   /** Zorluk: 1 basit, 2 orta, 3 kompleks (gömülü tariflerde). */
   level?: 1 | 2 | 3;
+  /** Ana malzemesi eksik "esnek" öneri (listenin sonunda). */
+  stretch?: boolean;
 };
 export type Slot = { meal: string; options: Option[]; done: { option: number; people: number } | null };
 export type Plan = { createdAt: number; invRev: number; people: number; days: { label: string; meals: Slot[] }[] };

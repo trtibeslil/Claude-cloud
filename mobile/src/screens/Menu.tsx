@@ -103,7 +103,7 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
         {err?.key === 'plan' ? <Notice tone="err" text={err.msg} /> : null}
         <Btn kind="primary" title={busy === 'plan' ? 'Menü hazırlanıyor…' : p ? 'Yeni menü öner' : 'Menü öner'}
           busy={busy === 'plan'} disabled={!!busy} onPress={makePlan} />
-        {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir. Eksik malzemeler ayrıca gösterilir. Besin değerleri kişi başıdır ve USDA besin veritabanından (SR28) malzeme gramajlarına göre hesaplanır.</T> : null}
+        {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir: önce malzemeleri dolapta olanlar gelir, sonda ana malzemesi eksik birkaç öneri olabilir. Yağ, tuz, karabiber, kimyon, toz ve pul biber, un ve makarna evde var sayılır. Besin değerleri kişi başıdır ve USDA besin veritabanından (SR28) malzeme gramajlarına göre hesaplanır.</T> : null}
       </Card>
 
       <FavoritesCard onCook={onCook} />
@@ -168,7 +168,7 @@ function OptionCard({ o, meal, slot, oi, open, loading, error, disabled, onSteps
         <IconBtn name={fav ? 'heart' : 'heart-outline'} tone={fav ? 'accent' : 'plain'}
           label={fav ? `${o.title} favorilerden çıkar` : `${o.title} favorilere ekle`} onPress={toggleFav} />
       </Row>
-      {o.summary ? <T kind="small" color={c.ink}>{o.summary}</T> : null}
+      {o.stretch ? <Chip tone="warn" text={o.summary} /> : o.summary ? <T kind="small" color={c.ink}>{o.summary}</T> : null}
       {o.nutrition?.kcal ? (
         <Row style={{ gap: 6 }}>
           <Chip text={`${o.nutrition.kcal} kcal`} />

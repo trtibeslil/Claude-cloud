@@ -64,7 +64,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
               <IconBtn name="heart" label={`${f.title} favorilerden çıkar`} tone="accent" onPress={() => toggle(f)} />
             </Row>
             <Row style={{ gap: 6 }}>
-              {mustMissing.length ? <Chip tone="warn" text={`Olmazsa olmaz eksik: ${mustMissing.join(', ')}`} />
+              {mustMissing.length ? <Chip tone="warn" text={`Ana malzeme eksik: ${mustMissing.join(', ')}`} />
                 : missing.length
                 ? <Chip tone="warn" text={`Eksik: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ` +${missing.length - 3}` : ''}`} />
                 : <Chip tone="done" text="Malzemelerin hepsi dolapta" />}
@@ -77,7 +77,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
             ) : null}
             <Row>
               {f.steps?.length ? <Btn title={isOpen ? 'Tarifi gizle' : 'Tarif'} onPress={() => setOpen(isOpen ? null : favKey(f.title))} /> : null}
-              <Btn kind="primary" title="Bunu yapıyorum" disabled={!uses.length || mustMissing.length > 0}
+              <Btn kind="primary" title="Bunu yapıyorum" disabled={!uses.length}
                 onPress={() => onCook({ title: f.title, servings: people, uses, people, source: null })} />
             </Row>
           </View>

@@ -154,7 +154,8 @@ Son yapılan yemekler (tekrarlama): ${r.recent.join(", ") || "yok"}
 Kurallar:
 - Her öğün için birbirinden belirgin şekilde farklı ${r.options} seçenek öner (farklı ana malzeme ya da pişirme yöntemi).
 - Seçenekler öncelikle dolaptaki malzemeleri kullansın.
-- Tarif önerme kuralı (önem sırası: 1 protein, 2 karbonhidrat, 3 sebze): yemeğin ana proteini dolapta yoksa o yemeği önerme (kuzu yoksa kuzu tandır yok). Proteinli yemekte karbonhidratı ve sebzesinin ikisi birden dolapta yoksa önerme. Proteinsiz yemekte asıl malzeme şarttır (pirinç yoksa pilav, yufka yoksa börek yok). Yemeğin adını veren malzeme dolapta olmalı. Sarımsak, soğan, baharat, salça, yağ gibi yardımcılar tek başına bir yemeği önermeye yetmez. Her günün ilk seçenekleri birlikte yapılırsa toplam kullanım dolaptaki miktarı aşmasın; günler ilerledikçe bitecek malzemeyi tekrar kullanma.
+- Tarif sıralama kuralı (önem sırası: 1 protein, 2 karbonhidrat, 3 sebze): ilk seçenekler, ana proteini, karbonhidratı ya da sebzesi ve adını veren malzemesi dolapta olan yemekler olsun (pirinç yoksa pilav, kuzu yoksa kuzu tandır öne gelmez). Son seçenekte en fazla bir ana malzemesi eksik bir yemek önerebilirsin; o zaman summary 'Ana malzeme eksik: ...' diye başlasın. Sarımsak, soğan, salça gibi yardımcılar tek başına bir yemeği önermeye yetmez.
+- Zeytinyağı, ayçiçek yağı, mısırözü yağı, tuz, karabiber, kimyon, toz ve pul biber, un ve makarna her evde var sayılır; dolapta olmasalar da kullanabilirsin, extra listesine yazma. Her günün ilk seçenekleri birlikte yapılırsa toplam kullanım dolaptaki miktarı aşmasın; günler ilerledikçe bitecek malzemeyi tekrar kullanma.
 - uses: dolaptan kullanılan malzemeler, ${r.people} kişilik gerçekçi miktarlarla. itemId dolaptaki id ile birebir aynı, unit o malzemenin dolaptaki birimi olsun.
 - extra: dolapta olmayan ama gereken malzemeler (tuz, karabiber, su hariç). Mümkünse boş, en fazla 3.
 - Kahvaltı önerileri kahvaltılık olsun (menemen, omlet, peynir tabağı gibi).

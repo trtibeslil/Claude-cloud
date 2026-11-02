@@ -52,12 +52,13 @@ python3 catalog/tarifler.py
 
 ### Tarif önerme kuralı
 
-Önem sırası: **1) protein, 2) karbonhidrat, 3) sebze.** Sarımsak, soğan, otlar, baharat, salça ve yağ yardımcıdır; tek başına bir tarifi önerdirmez. `catalog/tarifler.py` her malzemeye bir rol verir, `mobile/src/planner.ts` uygular:
+Önem sırası: **1) protein, 2) karbonhidrat, 3) sebze.** `catalog/tarifler.py` her malzemeye bir rol verir (olmazsa olmaz, destek, yardımcı), `mobile/src/planner.ts` önerileri buna göre sıralar:
 
-- Tarifin ana proteini dolapta yoksa tarif önerilmez (kuzu kol yoksa kuzu tandır yok). Ette yumurta ve peynir yardımcıdır; yumurta yemeklerinde yumurta şarttır.
-- Proteinli tarifte karbonhidratı ve sebzesinin ikisi birden eksikse önerilmez.
-- Proteinsiz tarifte asıl malzeme şarttır (pirinç yoksa pilav, yufka yoksa börek yok); kütlece en büyük malzeme de şarttır (cacıkta yoğurt).
-- Yemeğin adını veren malzeme şarttır (kıymalı patateste patates); hamur ve tahıl yemeklerinde karbonhidrat şarttır.
-- Eşdeğer ürünler birbirinin yerine geçer: makarna türleri, pirinç türleri, bulgur türleri, kıyma türleri gibi.
+- **Önce tam uygun tarifler:** ana proteini, adını veren malzemesi ve karbonhidrat ya da sebzesinden en az biri dolapta olanlar. Proteinsiz tarifte asıl malzeme (pilavda pirinç, börekte yufka) şarttır.
+- **Sonda esnek öneriler:** en fazla bir ana malzemesi eksik tarifler, "Ana malzeme eksik: …" uyarısıyla. Tam uygunlar yetmezse boşlukları doldurur; 4+ seçenekte sona en fazla bir tane eklenir.
+- Dolapta tarifin en az bir asıl malzemesi bulunmalı; yalnızca sarımsak, soğan ya da evde var sayılanlarla öneri yapılmaz.
+- **Evde var sayılanlar:** zeytinyağı, ayçiçek yağı, mısırözü yağı, tuz, karabiber, kimyon, toz ve pul biber, un ve her türlü makarna. Dolapta kayıtlı olmasa da mevcut sayılır, "eksik" gösterilmez; kayıtlıysa dolaptan düşülür.
+- Dolaptaki asıl malzemelerden daha çoğunu kullanan tarif öne geçer; son yapılanlar ve aynı plandaki tekrarlar geriye düşer.
+- Eşdeğer ürünler birbirinin yerine geçer (makarna, pirinç, bulgur, kıyma, domates türleri…).
 
 Telefonda yapay zekâsız fiş okuma hazır ama kapalı: [mobile/src/ocr/README.md](mobile/src/ocr/README.md).

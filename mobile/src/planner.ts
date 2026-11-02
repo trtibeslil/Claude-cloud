@@ -16,9 +16,10 @@ const MEAL_KEY: Record<string, string> = { 'Kahvaltı': 'K', 'Öğle': 'O', 'Ak�
 const BASE_SERVINGS = 4;
 const words = (s: string) => fold(s).split(' ').filter(w => w.length >= 2);
 
+const PASTA = ['Makarna', 'Spagetti', 'Penne makarna', 'Burgu makarna', 'Fiyonk makarna', 'Kelebek makarna'];
 /** Birbirinin yerine geçebilen ürünler: tarif "Makarna" diyorsa dolaptaki spagetti de olur. */
 const SUBSTITUTES = [
-  ['Makarna', 'Spagetti', 'Penne makarna', 'Burgu makarna', 'Fiyonk makarna', 'Kelebek makarna'],
+  PASTA,
   ['Pirinç', 'Baldo pirinç', 'Osmancık pirinç', 'Basmati pirinç'],
   ['Bulgur', 'Pilavlık bulgur', 'Köftelik bulgur'],
   ['Dana kıyma', 'Karışık kıyma', 'Kuzu kıyma'],
@@ -34,6 +35,12 @@ const SUBSTITUTES = [
   ['Un', 'Tam buğday unu'],
   ['Ekmek', 'Tam buğday ekmeği', 'Kepekli ekmek', 'Çavdar ekmeği'],
 ].map(g => g.map(fold));
+
+/** Her evde var sayılanlar: dolapta kayıtlı olmasa da tarif için mevcut sayılır, "eksik" gösterilmez.
+ *  Dolapta kayıtlıysa yine dolaptan düşülür. */
+export const STAPLES = new Set(['Zeytinyağı', 'Ayçiçek yağı', 'Mısırözü yağı', 'Tuz', 'Karabiber', 'Kimyon', 'Toz kırmızı biber',
+  'Kırmızı toz biber (acı)', 'Pul biber', 'Un', ...PASTA].map(fold));
+export const isStaple = (name: string) => STAPLES.has(fold(name));
 
 /**
  * Tarif malzemesine dolapta karşılık gelen ürün: aynı ad, ya da aynı kategoride adı tarif malzemesini içeren ürün
@@ -56,20 +63,27 @@ type Evaluated = {
   feasible: boolean;
   /** Dolapta olmayan olmazsa olmaz malzemeler. */
   mustMissing: string[];
+  /** Kural ihlali sayısı (eksik olmazsa olmaz + karşılanmayan destek grubu); 0 ise tam uygun. */
+  deviation: number;
+  /** Dolapta gerçekten bulunan asıl (m/k) malzeme sayısı; evde var sayılanlar sayılmaz. */
+  relevant: number;
 };
 
 /** Tarifin bu kişi sayısı için dolaptan ne kullanacağını ve neyin eksik olduğunu hesaplar. */
 export function evaluate(r: Recipe, stock: Item[], people: number, catOf: (name: string) => string | undefined): Evaluated {
   const scale = people / BASE_SERVINGS;
   const uses: Use[] = [], missing: Evaluated['missing'] = [];
-  let have = 0, short = 0, mustOk = true, support = 0, supportHave = 0;
+  let have = 0, short = 0, support = 0, supportHave = 0, relevant = 0;
   const mustMissing: string[] = [];
   for (const [name, qty, unit, optional, role] of r.i) {
     const need = norm(qty * scale, unit);
     const it = stockFor(name, stock, catOf);
-    if (!optional && role === 'm' && !it) { mustOk = false; mustMissing.push(name); }
-    if (!optional && role === 'k') { support++; if (it) supportHave++; }
+    const present = !!it || isStaple(name);
+    if (it && (role === 'm' || role === 'k')) relevant++;
+    if (!optional && role === 'm' && !present) mustMissing.push(name);
+    if (!optional && role === 'k') { support++; if (present) supportHave++; }
     if (!it) {
+      if (present) continue; // evde var sayılan: eksik değil, düşülecek kayıt da yok
       if (!optional) missing.push({ name, amount: fmtQty(need.qty, need.unit) });
       continue;
     }
@@ -79,14 +93,18 @@ export function evaluate(r: Recipe, stock: Item[], people: number, catOf: (name:
     have++;
     uses.push({ itemId: it.id, name: it.name, qty: roundQty(take, it.unit), unit: it.unit });
   }
-  return { recipe: r, uses, missing, have, short, mustMissing, feasible: mustOk && (support === 0 || supportHave > 0) };
+  const deviation = mustMissing.length + (support > 0 && supportHave === 0 ? 1 : 0);
+  return { recipe: r, uses, missing, have, short, mustMissing, deviation, relevant, feasible: deviation === 0 };
 }
 
 export function toOption(e: Evaluated, people: number): Option {
   const r = e.recipe;
   return {
     title: r.t,
-    summary: e.missing.length ? `${e.missing.length} malzeme eksik` : e.short ? 'Bazı malzemeler azalmış' : 'Malzemelerin hepsi dolapta',
+    summary: e.mustMissing.length ? `Ana malzeme eksik: ${e.mustMissing.join(', ')}`
+      : e.deviation ? 'Ana malzemelerin bir kısmı eksik'
+      : e.missing.length ? `${e.missing.length} malzeme eksik` : e.short ? 'Bazı malzemeler azalmış' : 'Malzemelerin hepsi dolapta',
+    stretch: e.deviation > 0,
     minutes: r.d, servings: people, uses: e.uses, extra: e.missing, steps: r.s, tip: r.p, level: r.z,
     nutrition: { kcal: r.n[0], protein: r.n[1], carbs: r.n[2], fat: r.n[3] },
   };
@@ -111,11 +129,18 @@ export function planMenu(recipes: Recipe[], items: Item[], o: PlanInput) {
       const key = MEAL_KEY[meal];
       const ranked = recipes.filter(r => r.m.includes(key) && (!o.levels?.length || o.levels.includes(r.z)))
         .map(r => evaluate(r, stock, o.people, o.catOf))
-        .filter(e => e.feasible)
-        .map(e => ({ e, score: e.missing.length * 10 + e.short * 3 - e.have
-          + (recent.has(fold(e.recipe.t)) ? 20 : 0) + (chosen.has(e.recipe.t) ? 15 : 0) }))
+        // Dolapta en az bir asıl malzemesi olmalı (yalnızca sarımsak ya da evde var sayılanlarla öneri yok).
+        // Önce tam uygunlar, sonda en fazla bir kural ihlali olan "esnek" öneriler.
+        .filter(e => e.relevant > 0 && e.deviation <= 1)
+        // Dolaptaki asıl malzemelerden daha çoğunu kullanan tarif öne geçer (tavuk + domates varken tavuk sote, domates çorbasından önce).
+        .map(e => ({ e, score: e.deviation * 1000 + e.missing.length * 10 + e.short * 3 - e.relevant * 20 - e.have
+          // Son yapılanlar ve aynı plandaki tekrarlar geriye düşer (başka seçenek yoksa yine de gelebilir).
+          + (recent.has(fold(e.recipe.t)) ? 60 : 0) + (chosen.has(e.recipe.t) ? 100 : 0) }))
         .sort((a, b) => a.score - b.score || a.e.recipe.t.localeCompare(b.e.recipe.t, 'tr'));
-      const picked = ranked.slice(0, o.options).map(x => x.e);
+      // Önce tam uygunlar; yetmezse kalan yerler esnek önerilerle dolar. 4+ seçenekte sona çeşitlilik için en fazla bir esnek öneri.
+      const exact = ranked.filter(x => x.e.deviation === 0), loose = ranked.filter(x => x.e.deviation > 0);
+      const nLoose = Math.min(loose.length, Math.max(o.options - exact.length, o.options >= 4 ? 1 : 0));
+      const picked = [...exact.slice(0, o.options - nLoose), ...loose.slice(0, nLoose)].map(x => x.e);
       if (!picked.length) continue;
       picked.forEach(e => chosen.add(e.recipe.t));
       // İlk seçenek yapılacakmış gibi malzemeleri sanal dolaptan düş.

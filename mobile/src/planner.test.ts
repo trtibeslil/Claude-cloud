@@ -68,10 +68,12 @@ test('Kural: sadece sarımsak varken hiçbir tarif önerilmez', () => {
   assert.deepEqual(plan[0].meals, []);
 });
 
-test('Kural: ana protein yoksa (kuzu kol, ahtapot) o tarif önerilmez', () => {
+test('Kural: ana proteini eksik tarif (kuzu kol, ahtapot) uygun tariflerden önce gelmez, gelirse esnek işaretlidir', () => {
   const stock = [item('s', 'Sarımsak', 250, 'g'), item('p', 'Patates', 2000, 'g'), item('o', 'Kuru soğan', 1000, 'g'), item('l', 'Limon', 500, 'g')];
-  const titles = planMenu(recipes, stock, { ...opts, meals: ['Akşam'], options: 5 })[0].meals.flatMap(m => m.options.map(o => o.title));
-  assert.ok(!titles.includes('Kuzu tandır') && !titles.includes('Ahtapot ızgara'), titles.join(', '));
+  const options = planMenu(recipes, stock, { ...opts, meals: ['Akşam'], options: 5 })[0].meals.flatMap(m => m.options);
+  const firstStretch = options.findIndex(o => o.stretch);
+  assert.ok(firstStretch === -1 || options.slice(firstStretch).every(o => o.stretch), 'esnek öneriler sonda');
+  for (const o of options) if (['Kuzu tandır', 'Ahtapot ızgara'].includes(o.title)) assert.ok(o.stretch && /Ana malzeme eksik/.test(o.summary), o.title);
   const tandir = recipes.find(r => r.t === 'Kuzu tandır')!;
   assert.equal(evaluate(tandir, stock, 4, catOf).feasible, false);
   assert.equal(evaluate(tandir, [...stock, item('k', 'Kuzu kol', 1500, 'g')], 4, catOf).feasible, true);
@@ -100,4 +102,25 @@ test('Eşdeğer ürünler: tarif "Makarna" diyorsa dolaptaki spagetti kullanıl�
   const e = evaluate(r, [item('s', 'Spagetti', 500, 'g'), item('k', 'Dana kıyma', 500, 'g')], 4, catOf);
   assert.equal(e.feasible, true);
   assert.ok(e.uses.some(u => u.name === 'Spagetti'));
+});
+
+test('Evde var sayılanlar: yağ, tuz, baharat, un ve makarna eksik sayılmaz, dolapta yoksa düşülmez', () => {
+  const r = recipes.find(x => x.t === 'Domatesli makarna')!;
+  const e = evaluate(r, [item('d', 'Domates', 1000, 'g')], 4, catOf);
+  assert.equal(e.feasible, true);
+  assert.ok(!e.missing.some(m => ['Spagetti', 'Zeytinyağı'].includes(m.name)), e.missing.map(m => m.name).join(', '));
+  assert.deepEqual(e.uses.map(u => u.name), ['Domates']);
+  // Dolapta kayıtlıysa kullanılır ve düşülür
+  const e2 = evaluate(r, [item('d', 'Domates', 1000, 'g'), item('s', 'Spagetti', 1000, 'g')], 4, catOf);
+  assert.ok(e2.uses.some(u => u.name === 'Spagetti'));
+});
+
+test('Sıralama: tam uygunlar önce, yetmezse esnek öneriler sonda; yalnızca evde var sayılanlarla öneri yok', () => {
+  const stock = [item('t', 'Tavuk göğsü', 1000, 'g'), item('d', 'Domates', 1000, 'g')];
+  const options = planMenu(recipes, stock, { ...opts, meals: ['Akşam'], options: 5 })[0].meals[0].options;
+  assert.equal(options.length, 5);
+  assert.equal(options[0].stretch, false);
+  const firstStretch = options.findIndex(o => o.stretch);
+  assert.ok(firstStretch === -1 || options.slice(firstStretch).every(o => o.stretch));
+  assert.deepEqual(planMenu(recipes, [item('z', 'Zeytinyağı', 1000, 'g' as 'g')], { ...opts, options: 5 })[0].meals, []);
 });

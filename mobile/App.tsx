@@ -8,7 +8,7 @@ import { EkleScreen } from './src/screens/Ekle';
 import { GecmisScreen } from './src/screens/Gecmis';
 import { MenuScreen, type CookRequest } from './src/screens/Menu';
 import { StoreProvider, useStore } from './src/store';
-import { Card, Icon, IconBtn, isDark, PALETTES, Row, shadow, T, ThemeProvider, useColors, type IconName, type PaletteId } from './src/ui';
+import { Card, Icon, IconBtn, isDark, PALETTES, Row, shadow, T, TEXT_SCALES, ThemeProvider, useColors, useScale, type IconName, type PaletteId } from './src/ui';
 
 type Tab = 'dolap' | 'ekle' | 'menu' | 'gecmis';
 const TABS: { key: Tab; label: string; icon: IconName; iconOn: IconName }[] = [
@@ -31,19 +31,27 @@ export default function App() {
 /** Seçilen renk temasını uygular (tema ayarı uygulama durumunda saklanır). */
 function Themed() {
   const { state } = useStore();
-  return <ThemeProvider palette={state.settings.palette}><Main /></ThemeProvider>;
+  return <ThemeProvider palette={state.settings.palette} textScale={state.settings.textScale}><Main /></ThemeProvider>;
 }
 
 function Main() {
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { loaded, toastMsg } = useStore();
+  const { loaded, toastMsg, state, update, toast } = useStore();
+  const k = useScale();
+  // A− / A+: yazı boyutunu bir seviye küçült/büyüt
+  const stepText = (dir: 1 | -1) => {
+    const i = TEXT_SCALES.findIndex(([v]) => v === (state.settings.textScale || 1));
+    const next = TEXT_SCALES[Math.min(TEXT_SCALES.length - 1, Math.max(0, (i < 0 ? 1 : i) + dir))];
+    update(s => ({ ...s, settings: { ...s.settings, textScale: next[0] } }));
+    toast(`Yazı boyutu: ${next[1]}`);
+  };
   const [tab, setTab] = useState<Tab>('dolap');
   const [cook, setCook] = useState<CookRequest | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const scroll = useRef<ScrollViewInstance>(null);
   const go = (t: Tab) => { setTab(t); scroll.current?.scrollTo({ y: 0, animated: false }); };
-  const tabBarSpace = 86 + insets.bottom;
+  const tabBarSpace = 86 * Math.max(1, k) + insets.bottom;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -52,10 +60,20 @@ function Main() {
         <ScrollView ref={scroll} keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: insets.top + 14, paddingBottom: tabBarSpace + 16, paddingLeft: Math.max(16, insets.left), paddingRight: Math.max(16, insets.right), gap: 18 }}>
           <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-            <Text style={{ fontSize: 30, fontWeight: '800', letterSpacing: -0.6, color: c.ink }}>
+            <Text style={{ fontSize: 30 * Math.min(k, 1.2), fontWeight: '800', letterSpacing: -0.6, color: c.ink, flexShrink: 1 }}>
               Dolap <Text style={{ color: c.accent }}>Defteri</Text>
             </Text>
-            <IconBtn name="options-outline" label="Ayarlar" onPress={() => setSettingsOpen(true)} />
+            <Row style={{ gap: 6, flexWrap: 'nowrap' }}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Yazıyı küçült" onPress={() => stepText(-1)} hitSlop={6}
+                style={[{ height: 42, minWidth: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }, shadow(c)]}>
+                <Text style={{ fontSize: 14, fontWeight: '800', color: c.ink }}>A−</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Yazıyı büyüt" onPress={() => stepText(1)} hitSlop={6}
+                style={[{ height: 42, minWidth: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface }, shadow(c)]}>
+                <Text style={{ fontSize: 19, fontWeight: '800', color: c.ink }}>A+</Text>
+              </Pressable>
+              <IconBtn name="options-outline" label="Ayarlar" onPress={() => setSettingsOpen(true)} />
+            </Row>
           </Row>
           {!loaded ? <ActivityIndicator color={c.muted} /> :
             tab === 'dolap' ? <DolapScreen go={go} /> :
@@ -68,11 +86,11 @@ function Main() {
       {toastMsg ? (
         <View pointerEvents="box-none" style={{ position: 'absolute', left: 16, right: 16, bottom: tabBarSpace + 8, alignItems: 'center' }}>
           <View accessibilityLiveRegion="polite" style={[{ backgroundColor: c.ink, paddingLeft: 18, paddingRight: toastMsg.action ? 6 : 18, paddingVertical: 6, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44 }, shadow(c, true)]}>
-            <Text style={{ color: c.bg, fontSize: 14, fontWeight: '600', flexShrink: 1 }}>{toastMsg.msg}</Text>
+            <Text style={{ color: c.bg, fontSize: 14 * k, fontWeight: '600', flexShrink: 1 }}>{toastMsg.msg}</Text>
             {toastMsg.action ? (
               <Pressable accessibilityRole="button" onPress={toastMsg.action.onPress}
                 style={{ backgroundColor: c.accent, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 }}>
-                <Text style={{ color: c.accentInk, fontWeight: '700' }}>{toastMsg.action.label}</Text>
+                <Text style={{ color: c.accentInk, fontWeight: '700', fontSize: 14 * k }}>{toastMsg.action.label}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -89,7 +107,7 @@ function Main() {
             <Pressable key={t.key} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={t.label} onPress={() => go(t.key)}
               style={{ flex: 1, alignItems: 'center', paddingVertical: 8, gap: 2, borderRadius: 20, backgroundColor: on ? c.accentSoft : 'transparent' }}>
               <Icon name={on ? t.iconOn : t.icon} size={22} color={on ? c.accent : c.muted} />
-              <Text style={{ fontSize: 12, fontWeight: '700', color: on ? c.accent : c.muted }}>{t.label}</Text>
+              <Text style={{ fontSize: 12 * Math.min(k, 1.3), fontWeight: '700', color: on ? c.accent : c.muted }} numberOfLines={1}>{t.label}</Text>
             </Pressable>
           );
         })}
@@ -128,6 +146,23 @@ function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }
             'Dolapta ve ürün listesinde bir satırı sağa kaydırınca eklenir, sola kaydırınca azaltılır. Dokunarak düzenleme her zaman açık.',
             st.swipe, v => set({ swipe: v }))}
           {row('Titreşimle geri bildirim', 'Kaydırma işlemi gerçekleşince telefon hafifçe titrer.', st.haptics, v => set({ haptics: v }))}
+        </Card>
+        <Card>
+          <T kind="label">Yazı boyutu</T>
+          <T kind="small">Tüm metin ve düğmeler büyür. Başlıktaki A− ve A+ ile de değiştirebilirsin.</T>
+          <Row style={{ gap: 6 }}>
+            {TEXT_SCALES.map(([v, name]) => {
+              const on = (st.textScale || 1) === v;
+              return (
+                <Pressable key={v} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={`Yazı boyutu ${name}`}
+                  onPress={() => set({ textScale: v })}
+                  style={{ alignItems: 'center', justifyContent: 'center', minWidth: 56, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 14, backgroundColor: on ? c.accent : c.field }}>
+                  <Text style={{ fontSize: 16 * v, fontWeight: '800', color: on ? c.accentInk : c.ink }}>Aa</Text>
+                  <Text style={{ fontSize: 11, color: on ? c.accentInk : c.muted }}>{name}</Text>
+                </Pressable>
+              );
+            })}
+          </Row>
         </Card>
         <Card>
           <T kind="label">Renk teması</T>

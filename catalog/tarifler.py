@@ -102,10 +102,8 @@ Yoğurtlu patlıcan kızartması | O | 35 | v | Patlıcan:800 g, Yoğurt:400 g, 
 Zeytinyağlı enginar | O | 45 | vg | Enginar:6 adet, Havuç:150 g, Taze bezelye:200 g, Zeytinyağı:60 ml, Limon:100 g | Enginarları limonlu suda beklet. / Havuç ve bezelyeyle tencereye diz. / Zeytinyağı ve az suyla 30 dakika pişir.
 Zeytinyağlı biber dolması | O,A | 60 | vg | Dolmalık biber:600 g, Baldo pirinç:250 g, Kuru soğan:200 g, Zeytinyağı:80 ml, ?Kuru nane:3 g | Soğanı zeytinyağında kavur, pirinci ekle. / Biberleri iç harçla doldur. / Az suyla 40 dakika pişir; soğuk servis et.
 Etli biber dolması | A | 60 | hp | Dolmalık biber:600 g, Dana kıyma:300 g, Baldo pirinç:150 g, Kuru soğan:100 g, Domates salçası:30 g | Kıyma, pirinç, soğan ve salçayı yoğur. / Biberleri doldur. / Salçalı suyla 40 dakika pişir.
-Lahana sarması | A | 90 | hp | Lahana:1 adet, Dana kıyma:250 g, Baldo pirinç:200 g, Kuru soğan:100 g, Domates salçası:30 g | Lahana yapraklarını haşla. / Kıymalı pirinç harcıyla sar. / Salçalı suyla 50 dakika pişir.
 Kabak dolması | A | 60 | hp | Kabak:800 g, Dana kıyma:250 g, Baldo pirinç:150 g, Domates:200 g | Kabakların içini oy. / Kıyma, pirinç ve domatesle doldur. / Az suyla 40 dakika pişir.
 Patates oturtma | A | 60 | hp | Patates:800 g, Dana kıyma:300 g, Kuru soğan:100 g, Domates:300 g | Patatesleri dilimleyip kızart ya da fırınla. / Kıymayı soğan ve domatesle kavur. / Patateslerin üzerine kıymayı koyup 20 dakika fırınla.
-Hünkar beğendi | A | 90 | hp | Patlıcan:1000 g, Dana kuşbaşı:500 g, Süt:400 ml, Un:40 g, Tereyağı:40 g, Kaşar peyniri:80 g, Domates:200 g | Eti domatesle yumuşayana kadar pişir. / Közlenmiş patlıcanı tereyağı, un ve sütle beğendi yap, kaşarı ekle. / Beğendinin üzerine eti koyarak servis et.
 Tas kebabı | A | 80 | hp,lc | Dana kuşbaşı:600 g, Kuru soğan:200 g, Domates salçası:30 g, ?Patates:300 g | Eti suyunu çekene kadar kavur. / Soğan ve salçayı ekle. / Sıcak suyla 60 dakika pişir.
 Orman kebabı | A | 80 | hp | Kuzu kuşbaşı:600 g, Patates:300 g, Havuç:150 g, Taze bezelye:150 g, Kuru soğan:150 g | Eti kavur, soğanı ekle. / Sıcak suyla 40 dakika pişir. / Sebzeleri ekleyip 25 dakika daha pişir.
 Kuzu incik | A | 120 | hp,lc | Kuzu incik:1000 g, Kuru soğan:150 g, Domates:300 g, ?Patates:400 g | İncikleri her yüzü kızarana kadar mühürle. / Soğan, domates ve sıcak suyu ekle. / Kısık ateşte ya da fırında 90 dakika pişir.
@@ -128,7 +126,6 @@ Hindi köfte | A | 30 | hp,lc | Hindi kıyma:500 g, Kuru soğan:100 g, Yumurta:1
 Tavuklu sebze sote | A | 25 | hp,lc | Tavuk göğsü:500 g, Brokoli:1 adet, Havuç:150 g, Kapya biber:150 g, Soya sosu:40 ml | Tavuğu yüksek ateşte sotele. / Sebzeleri ekleyip 5 dakika çevir. / Soya sosuyla tatlandır.
 Kremalı tavuklu makarna | A | 30 | hp | Penne makarna:500 g, Tavuk göğsü:400 g, Krema:200 ml, Kültür mantarı:200 g | Makarnayı haşla. / Tavuk ve mantarı sotele, kremayı ekle. / Makarnayla karıştır.
 Fırın makarna | A | 50 | v | Makarna:500 g, Süt:500 ml, Yumurta:2 adet, Kaşar peyniri:150 g, Tereyağı:30 g | Makarnayı haşla. / Süt, yumurta ve eritilmiş tereyağıyla karıştırıp tepsiye al. / Kaşarı serpip 180 derecede 30 dakika pişir.
-Lazanya | A | 70 | hp | Lazanya yaprağı:250 g, Dana kıyma:400 g, Domates:400 g, Süt:500 ml, Un:40 g, Kaşar peyniri:150 g | Kıymayı domatesle sos haline getir. / Un, süt ve tereyağıyla beşamel hazırla. / Yaprak, kıyma ve beşameli kat kat diz, kaşarla 40 dakika fırınla.
 Pesto soslu makarna | O,A | 20 | v | Spagetti:500 g, Pesto sos:190 g, ?Parmesan:50 g | Makarnayı haşla. / Pesto sosla karıştır. / Parmesanla servis et.
 Ton balıklı makarna | O,A | 25 | hp | Makarna:500 g, Ton balığı:2 kutu, Domates:300 g, ?Mısır konservesi:1 kutu | Makarnayı haşla. / Domatesi sos haline getir, ton balığını ekle. / Makarnayla karıştır.
 Sebzeli erişte | O,A | 25 | vg | Erişte:500 g, Kabak:200 g, Havuç:150 g, Kapya biber:150 g, Soya sosu:40 ml | Erişteyi haşla. / Sebzeleri yüksek ateşte sotele. / Erişte ve soya sosuyla karıştır.
@@ -163,17 +160,31 @@ Alabalık ızgara | A | 25 | hp,lc | Alabalık:1000 g, Limon:100 g | Balıkları
 Mantar sote | O,A | 20 | v,lc | Kültür mantarı:600 g, Tereyağı:30 g, Sivri biber:100 g | Mantarları dilimle. / Tereyağında yüksek ateşte sotele. / Biberi ekleyip 3 dakika daha pişir.
 Etli nohut | A | 90 | hp | Nohut:350 g, Dana kuşbaşı:250 g, Kuru soğan:150 g, Domates salçası:40 g | Nohudu ıslat. / Eti kavur, soğan ve salçayı ekle. / Nohut ve sıcak suyla 60 dakika pişir.
 Zeytinyağlı bezelye | O,A | 35 | vg | Dondurulmuş bezelye:450 g, Havuç:150 g, Patates:200 g, Kuru soğan:100 g, Zeytinyağı:50 ml | Soğanı zeytinyağında kavur. / Havuç, patates ve bezelyeyi ekle. / Az suyla 25 dakika pişir.
-Kıymalı patates | A | 40 | hp | Patates:800 g, Dana kıyma:250 g, Kuru soğan:100 g, Domates salçası:20 g | Kıymayı soğanla kavur, salçayı ekle. / Küp patatesleri ve suyu ekle. / 25 dakika pişir.
+Kıymalı patates | A | 45 | hp | Patates:800 g, Dana kıyma:300 g, Kuru soğan:150 g, Sarımsak:10 g, Domates salçası:20 g, Biber salçası:20 g, Sivri biber:100 g, ?Pul biber:5 g, ?Kimyon:3 g, ?Maydanoz:1 demet | Patatesleri küp doğrayıp suda beklet, nişastasını al ve iyice kurula. / Patatesleri az yağda, kenarları kızarana kadar 8-10 dakika kavurup bir kenara al. / Aynı tencerede kıymayı yüksek ateşte suyunu çekip kızarana kadar kavur. / Soğan, sarımsak ve biberi ekleyip soğan yumuşayana kadar pişir. / Salçaları, pul biberi ve kimyonu ekleyip 2 dakika kavur; salça kokusu çıksın. / Patatesleri ve 1,5 su bardağı sıcak suyu ekle, kapağı kapalı kısık ateşte 20 dakika patatesler yumuşayana kadar pişir. / Doğranmış maydanozla servis et.
 Mercimekli bulgur pilavı | O,A | 40 | v | Pilavlık bulgur:300 g, Yeşil mercimek:150 g, Kuru soğan:150 g, Tereyağı:30 g | Mercimeği yarı yumuşayana kadar haşla. / Soğanı kavurup bulgur ve mercimeği ekle. / Sıcak suyla 15 dakika demle.
 """
 
+# Zorluk: 1 basit (varsayılan), 2 orta, 3 kompleks. Kompleks tarifler aşağıdaki K bloğunda, adımları ve püf noktasıyla.
+ORTA = """Mıhlama; Peynirli börek; Ezogelin çorbası; Yayla çorbası; Fırında tavuk baget ve patates; Tavuklu pilav; Fırında köfte patates;
+Karnıyarık; Patlıcan musakka; İmam bayıldı; Etli bezelye; Kuru fasulye; Nohut yemeği; Zeytinyağlı taze fasulye; Zeytinyağlı pırasa;
+Kabak mücveri; Kısır; Kıymalı börek; Pişi; Peynirli gözleme; Krep; Düğün çorbası; İşkembe çorbası; Etli kuru fasulye; Barbunya pilaki;
+Humus; Falafel; Mercimek köftesi; Türlü; Şakşuka; Zeytinyağlı enginar; Zeytinyağlı biber dolması; Etli biber dolması; Kabak dolması;
+Patates oturtma; Tas kebabı; Orman kebabı; Kuzu incik; İzmir köfte; Sulu köfte; Kadınbudu köfte; Kıymalı pide; Tavuk şinitzel;
+Tavuk güveç; Fırında bütün tavuk; Arnavut ciğeri; Kremalı tavuklu makarna; Fırın makarna; Mantarlı risotto; Patates köftesi;
+Sigara böreği; Ispanaklı börek; Patatesli börek; Piyaz; Karides güveç; Kalamar tava; Etli nohut; Hamsi tava; Kıymalı patates"""
+KOMPLEKS: set[str] = set()  # kompleks tarifler kompleks.txt dosyasında
 root = pathlib.Path(__file__).resolve().parent
+K = (pathlib.Path(__file__).resolve().parent / "kompleks.txt").read_text()
 catalog = json.loads((root / "urunler.json").read_text())
 names = {i[0] for i in catalog["items"]}
 recipes = []
-for line in R.strip().splitlines():
+orta = {x.strip() for x in ORTA.replace("\n", " ").split(";")}
+lines = [(l, None) for l in R.strip().splitlines()] + [(l, 3) for l in K.strip().splitlines()]
+for line, level in lines:
     cols = [x.strip() for x in line.split("|")]
     title, meals, minutes, tags, ings, steps = cols[:6]
+    tip = cols[6] if level == 3 and len(cols) > 6 else None
+    z = level or (3 if title in KOMPLEKS else 2 if title in orta else 1)
     ing = []
     for part in ings.split(","):
         part = part.strip()
@@ -185,9 +196,10 @@ for line in R.strip().splitlines():
     recipes.append({
         "t": title, "m": meals.replace(" ", "").split(","), "d": int(minutes),
         "tags": [t for t in tags.split(",") if t], "i": ing,
-        "s": [x.strip() for x in steps.split(" / ")],
+        "s": [x.strip() for x in steps.split(" / ")], "z": z, **({"p": tip} if tip else {}),
     })
 assert len({r["t"] for r in recipes}) == len(recipes)
+assert orta <= {r["t"] for r in recipes}, orta - {r["t"] for r in recipes}
 
 # Besin değerleri: besin.json (USDA SR28) üzerinden malzeme gramajlarından hesaplanır, kişi başı (4 kişilik tarif).
 besin = json.loads((root / "besin.json").read_text())
@@ -209,4 +221,4 @@ for r in recipes:
     r["n"] = [round(tot["kcal"] / 4), round(tot["protein"] / 4), round(tot["carbs"] / 4), round(tot["fat"] / 4)]
     r["na"] = any(besin[name]["approx"] for name, *_ in r["i"])  # en az bir malzeme yaklaşık değerli
 (root.parent / "mobile/src/tarifler.json").write_text(json.dumps(recipes, ensure_ascii=False, separators=(",", ":")))
-print(len(recipes), "tarif:", sum("K" in r["m"] for r in recipes), "kahvaltı,", sum("O" in r["m"] for r in recipes), "öğle,", sum("A" in r["m"] for r in recipes), "akşam")
+print(len(recipes), "tarif (basit/orta/kompleks:", *[sum(r["z"] == z for r in recipes) for z in (1, 2, 3)], "):", sum("K" in r["m"] for r in recipes), "kahvaltı,", sum("O" in r["m"] for r in recipes), "öğle,", sum("A" in r["m"] for r in recipes), "akşam")

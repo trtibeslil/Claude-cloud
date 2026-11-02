@@ -23,6 +23,8 @@ export type Option = {
   steps?: string[]; tip?: string;
   /** Kişi başı yaklaşık besin değerleri (gram), biliniyorsa. */
   nutrition?: { kcal: number; protein: number; carbs: number; fat: number } | null;
+  /** Zorluk: 1 basit, 2 orta, 3 kompleks (gömülü tariflerde). */
+  level?: 1 | 2 | 3;
 };
 export type Slot = { meal: string; options: Option[]; done: { option: number; people: number } | null };
 export type Plan = { createdAt: number; invRev: number; people: number; days: { label: string; meals: Slot[] }[] };
@@ -32,13 +34,16 @@ export type HistoryEntry = {
   source: { d: number; m: number; o: number } | null;
 };
 // swipe: listelerde sağa/sola kaydırarak ekleme-azaltma; haptics: titreşimle geri bildirim
-// palette: renk teması (ui.tsx PALETTES)
-export type Settings = { people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean; palette: string };
+// palette: renk teması (ui.tsx PALETTES); levels: istenen tarif zorlukları (1 basit, 2 orta, 3 kompleks); textScale: yazı boyutu çarpanı
+export type Settings = {
+  people: number; days: number; meals: string[]; options: number; swipe: boolean; haptics: boolean; palette: string;
+  levels: number[]; textScale: number;
+};
 /** Favori tarif: menüden ya da tarif listesinden eklenir; meals hangi öğün sekmelerinde görüneceğini söyler. */
 export type Favorite = {
   title: string; meals: string[]; minutes: number; servings: number;
   uses: { name: string; qty: number; unit: string }[]; extra: { name: string; amount: string }[];
-  steps?: string[]; tip?: string; nutrition?: Option['nutrition']; at: number;
+  steps?: string[]; tip?: string; nutrition?: Option['nutrition']; level?: 1 | 2 | 3; at: number;
 };
 // aliases: fiş satırı (sadeleştirilmiş) → kullanıcının onayladığı ürün adı; telefonda fiş okuma bunlardan öğrenir.
 export type State = {
@@ -48,7 +53,7 @@ export type State = {
 
 export const blankState = (): State => ({
   items: [], plan: null, history: [], invRev: 0, aliases: {}, favorites: [],
-  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true, palette: 'portakal' },
+  settings: { people: 4, days: 1, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 3, swipe: true, haptics: true, palette: 'portakal', levels: [1, 2, 3], textScale: 1 },
 });
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

@@ -3,13 +3,14 @@ import { Pressable, View } from 'react-native';
 import { addItems, CATS, fmtQty, lower, norm, nudgeItem, perLabel, roundQty, swipeStep, UNITS, type Item } from '../logic';
 import { catColor } from './Pick';
 import { useStore } from '../store';
-import { Btn, Card, Field, Icon, Row, SwipeHint, SwipeRow, T, Toggle, useColors } from '../ui';
+import { Btn, Card, Field, Icon, Row, SwipeHint, SwipeRow, T, Toggle, useColors, useScale } from '../ui';
 
 export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
   const { state, update, toast } = useStore();
   const c = useColors();
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
+  const k = useScale();
 
   if (!state.items.length) {
     return (
@@ -79,7 +80,7 @@ export function DolapScreen({ go }: { go: (tab: 'ekle' | 'menu') => void }) {
                           {it.unitPrice ? <T kind="small">{perLabel(it)}</T> : null}
                         </View>
                         <View style={{ backgroundColor: c.field, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
-                          <T kind="mono" style={{ fontSize: 13 }}>{fmtQty(it.qty, it.unit)}</T>
+                          <T kind="mono" style={{ fontSize: 13 * k }}>{fmtQty(it.qty, it.unit)}</T>
                         </View>
                         <Icon name="chevron-forward" size={16} color={c.muted} />
                       </Pressable>

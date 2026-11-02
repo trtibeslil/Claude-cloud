@@ -46,20 +46,27 @@ MAP = {
   "Yeşil mercimek": [("16069", 1)], "Yoğurt": [("01116", 1)], "Yufka": [("18338", 1)], "Yulaf ezmesi": [("08120", 1)],
   "Yumurta": [("01123", 1)], "Zeytinyağı": [("04053", 1)], "Çilek": [("09316", 1)], "Çipura": [("15091", 1)],
   "Üzüm sirkesi": [("02068", 1)], "İşkembe": [("13341", 1)],
+  # Kompleks tariflerle gelenler
+  "Kuzu kıyma": [("17224", 1)], "Kuzu kol": [("17035", 1)], "Dana antrikot": [("13095", 1)], "Defne yaprağı": [("02004", 1)],
+  "Tarçın": [("02010", 1)], "Yenibahar": [("02001", 1)], "Zencefil": [("11216", 1)], "Susam": [("12023", 1)],
+  "Köri": [("02015", 1)], "Toz kırmızı biber": [("02028", 1)], "Muskat": [("02025", 1)], "Hardal": [("02046", 1)],
+  "İrmik": [("20066", 1)], "Badem": [("12061", 1)], "Kuş üzümü": [("09085", 1)], "Çam fıstığı": [("12147", 1)],
+  "Ahtapot": [("15166", 1)], "Kereviz": [("11141", 1)], "Taze nane": [("02065", 1)], "Zerdeçal": [("02043", 1)],
+  "Toz şeker": [("19335", 1)], "İsot": [("02031", 1)],
 }
 APPROX = {"Acuka", "Beyaz peynir", "Biber salçası", "Hellim", "Kavurma", "Kaymak", "Kaşar peyniri", "Lor peyniri", "Mantı",
-          "Nar ekşisi", "Palamut", "Simit", "Sucuk", "Tarhana", "Çipura", "Lavaş"}
+          "Nar ekşisi", "Palamut", "İsot", "Simit", "Sucuk", "Tarhana", "Çipura", "Lavaş"}
 # Adet, demet, paket ve kutunun yenilebilir gram karşılığı; ml için yoğunluk (g/ml).
 UNIT_GRAMS = {
   "Yumurta": 50, "Avokado": 150, "Ekmek": 250, "Tam buğday ekmeği": 350, "Simit": 110, "Pide": 250, "Enginar": 120,
   "Brokoli": 500, "Karnabahar": 800, "Lahana": 1500, "Marul": 400, "Bütün tavuk": 1200,
   "Maydanoz": 50, "Dereotu": 50, "Taze soğan": 100, "Roka": 80, "Fesleğen": 30,
   "Kuru maya": 10, "Yufka": 500, "Tost ekmeği": 500, "Hamburger ekmeği": 280, "Lavaş": 300,
-  "Ton balığı": 120, "Mısır konservesi": 220, "Haşlanmış nohut": 240,
+  "Ton balığı": 120, "Defne yaprağı": 5, "Taze nane": 30, "Mısır konservesi": 220, "Haşlanmış nohut": 240,
 }
 # Kılçıklı/kemikli ürünlerde tarif ağırlığının yenilebilir payı (SR28 değerleri yenilebilir kısım içindir).
 EDIBLE = {"Hamsi": .6, "Levrek": .5, "Çipura": .5, "Uskumru": .6, "Alabalık": .6, "Palamut": .65,
-          "Kuzu incik": .6, "Kuzu pirzola": .7, "Tavuk baget": .7, "Tavuk kanat": .6, "Tavuk but": .75}
+          "Kuzu incik": .6, "Kuzu pirzola": .7, "Tavuk baget": .7, "Tavuk kanat": .6, "Tavuk but": .75, "Kuzu kol": .7}
 DENSITY = {"Ayçiçek yağı": .92, "Zeytinyağı": .92, "Süt": 1.03, "Soya sosu": 1.1, "Nar ekşisi": 1.3, "Krema": 1.0, "Üzüm sirkesi": 1.0}
 
 def load(path):

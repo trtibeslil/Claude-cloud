@@ -9,6 +9,9 @@ import { FavoritesCard } from './Favorites';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, IconBtn, Notice, Row, Stepper, T, Toggle, useColors } from '../ui';
 
+export const LEVELS: [number, string][] = [[1, 'Basit'], [2, 'Orta'], [3, 'Kompleks']];
+export const levelName = (z?: number) => LEVELS.find(([lv]) => lv === z)?.[1];
+
 export type CookRequest = { title: string; servings: number; uses: Use[]; people: number; source: { d: number; m: number; o: number } | null };
 
 export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
@@ -33,8 +36,8 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
     const recent = state.history.slice(0, 10).map(h => h.title);
     // Sunucu ayarlıysa yapay zekâ önerir; değilse uygulamadaki tariflerden dolaba göre seçilir.
     const out = api.apiConfigured()
-      ? await api.makePlan({ items: state.items, people: st.people, days: st.days, meals: st.meals, options: st.options, recent })
-      : { days: planMenu(RECIPES, state.items, { people: st.people, days: st.days, meals: st.meals, options: st.options, recent, catOf }) };
+      ? await api.makePlan({ items: state.items, people: st.people, days: st.days, meals: st.meals, options: st.options, recent, levels: st.levels })
+      : { days: planMenu(RECIPES, state.items, { people: st.people, days: st.days, meals: st.meals, options: st.options, recent, catOf, levels: st.levels }) };
     const days = out.days.slice(0, st.days).map((d, i) => ({
       label: dayLabel(i),
       meals: d.meals.filter(m => m.options.length).map((m): Slot => ({ meal: m.meal, done: null, options: m.options.slice(0, 5) })),
@@ -85,6 +88,17 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
               onPress={() => setSettings({ meals: MEALS.filter(x => (x === m ? !st.meals.includes(m) : st.meals.includes(x))) })} />
           ))}
         </Row>
+        <T>Tarif zorluğu</T>
+        <Row>
+          {LEVELS.map(([lv, name]) => (
+            <Toggle key={lv} label={name} on={st.levels.includes(lv)}
+              onPress={() => {
+                const next = st.levels.includes(lv) ? st.levels.filter(x => x !== lv) : [...st.levels, lv].sort();
+                if (next.length) setSettings({ levels: next });
+              }} />
+          ))}
+        </Row>
+        <T kind="small">Basit: kısa ve pratik. Orta: biraz daha emek ister. Kompleks: ayrıntılı adımlı, derin lezzetli yemekler.</T>
         <T kind="small">{st.days} gün × {st.meals.length} öğün × {st.options} seçenek, {st.people} kişilik</T>
         {err?.key === 'plan' ? <Notice tone="err" text={err.msg} /> : null}
         <Btn kind="primary" title={busy === 'plan' ? 'Menü hazırlanıyor…' : p ? 'Yeni menü öner' : 'Menü öner'}
@@ -150,6 +164,7 @@ function OptionCard({ o, meal, slot, oi, open, loading, error, disabled, onSteps
       <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         <T kind="h3" style={{ flex: 1 }}>{o.title}</T>
         {o.minutes ? <T kind="small">{o.minutes} dk</T> : null}
+        {o.level ? <Chip tone={o.level === 3 ? 'warn' : 'soft'} text={levelName(o.level)!} /> : null}
         <IconBtn name={fav ? 'heart' : 'heart-outline'} tone={fav ? 'accent' : 'plain'}
           label={fav ? `${o.title} favorilerden çıkar` : `${o.title} favorilere ekle`} onPress={toggleFav} />
       </Row>
@@ -179,7 +194,7 @@ function OptionCard({ o, meal, slot, oi, open, loading, error, disabled, onSteps
           : o.steps ? (
             <View style={{ gap: 6 }}>
               {o.steps.map((step, i) => <T key={i} kind="small" color={c.ink}>{i + 1}. {step}</T>)}
-              {o.tip ? <T kind="small">İpucu: {o.tip}</T> : null}
+              {o.tip ? <T kind="small">Püf noktası: {o.tip}</T> : null}
             </View>
           ) : error ? <Notice tone="err" text={error} /> : null
       ) : null}

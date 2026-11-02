@@ -51,3 +51,14 @@ test('Besin değerleri USDA SR28 tablosundan hesaplanır (domatesli makarna, ki�
   assert.equal(r.n[0], Math.round(kcal));
   for (const x of recipes) assert.ok(x.n.length === 4 && x.n[0] > 0, x.t);
 });
+
+test('Zorluk seçimi: yalnızca seçilen seviyelerdeki tarifler önerilir', () => {
+  const stock = [item('y', 'Yumurta', 30, 'adet'), item('d', 'Domates', 2000, 'g'), item('k', 'Dana kıyma', 1000, 'g'),
+    item('o', 'Kuru soğan', 2000, 'g'), item('p', 'Patates', 2000, 'g'), item('u', 'Un', 2000, 'g'), item('t', 'Tereyağı', 500, 'g')];
+  const only = (levels: number[]) => planMenu(recipes, stock, { ...opts, meals: ['Akşam'], options: 5, levels })[0].meals[0].options;
+  const complex = only([3]);
+  assert.ok(complex.length > 0);
+  for (const o of complex) assert.equal(o.level, 3, o.title);
+  for (const o of only([1])) assert.equal(o.level, 1, o.title);
+  assert.ok(recipes.filter(r => r.z === 3).every(r => r.s.length >= 7 && r.p), 'kompleks tarifler ayrıntılı ve püf noktalı');
+});

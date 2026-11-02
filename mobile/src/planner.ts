@@ -8,6 +8,8 @@ export type Recipe = {
   t: string; m: string[]; d: number; tags: string[];
   i: [name: string, qty: number, unit: string, optional: 0 | 1][];
   s: string[]; n: [kcal: number, protein: number, carbs: number, fat: number];
+  /** Zorluk: 1 basit, 2 orta, 3 kompleks; p: püf noktası (kompleks tariflerde). */
+  z: 1 | 2 | 3; p?: string;
 };
 const MEAL_KEY: Record<string, string> = { 'Kahvaltı': 'K', 'Öğle': 'O', 'Akşam': 'A' };
 const BASE_SERVINGS = 4;
@@ -53,13 +55,15 @@ export function toOption(e: Evaluated, people: number): Option {
   return {
     title: r.t,
     summary: e.missing.length ? `${e.missing.length} malzeme eksik` : e.short ? 'Bazı malzemeler azalmış' : 'Malzemelerin hepsi dolapta',
-    minutes: r.d, servings: people, uses: e.uses, extra: e.missing, steps: r.s,
+    minutes: r.d, servings: people, uses: e.uses, extra: e.missing, steps: r.s, tip: r.p, level: r.z,
     nutrition: { kcal: r.n[0], protein: r.n[1], carbs: r.n[2], fat: r.n[3] },
   };
 }
 
 export type PlanInput = {
   people: number; days: number; meals: string[]; options: number; recent: string[];
+  /** İstenen zorluk seviyeleri (1 basit, 2 orta, 3 kompleks); boşsa hepsi. */
+  levels?: number[];
   catOf: (name: string) => string | undefined;
 };
 
@@ -73,7 +77,7 @@ export function planMenu(recipes: Recipe[], items: Item[], o: PlanInput) {
     const meals: { meal: string; options: Option[] }[] = [];
     for (const meal of o.meals) {
       const key = MEAL_KEY[meal];
-      const ranked = recipes.filter(r => r.m.includes(key))
+      const ranked = recipes.filter(r => r.m.includes(key) && (!o.levels?.length || o.levels.includes(r.z)))
         .map(r => evaluate(r, stock, o.people, o.catOf))
         .filter(e => e.have > 0)
         .map(e => ({ e, score: e.missing.length * 10 + e.short * 3 - e.have

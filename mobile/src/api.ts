@@ -34,8 +34,8 @@ export const parseImages = (images: { mediaType: 'image/jpeg'; data: string }[])
 export type PlanResponse = {
   days: { meals: { meal: string; options: { title: string; summary: string; minutes: number; servings: number; uses: Use[]; extra: { name: string; amount: string }[] }[] }[] }[];
 };
-export const makePlan = (p: { items: Item[]; people: number; days: number; meals: string[]; options: number; recent: string[] }) =>
-  post<PlanResponse>('/plan', { inventory: inv(p.items), people: p.people, days: p.days, meals: p.meals, options: p.options, recent: p.recent });
+export const makePlan = (p: { items: Item[]; people: number; days: number; meals: string[]; options: number; recent: string[]; levels: number[] }) =>
+  post<PlanResponse>('/plan', { inventory: inv(p.items), people: p.people, days: p.days, meals: p.meals, options: p.options, recent: p.recent, levels: p.levels });
 
 export const getSteps = (p: { title: string; servings: number; ingredients: string[] }) =>
   post<{ steps: string[]; tip: string }>('/steps', p);

@@ -12,6 +12,16 @@
   ],
   "approx": true
  },
+ "Ahtapot": {
+  "kcal": 82.0,
+  "protein": 14.91,
+  "carbs": 2.2,
+  "fat": 1.04,
+  "sr28": [
+   "15166"
+  ],
+  "approx": false
+ },
  "Alabalık": {
   "kcal": 141.0,
   "protein": 19.94,
@@ -54,6 +64,16 @@
   ],
   "approx": false,
   "density": 0.92
+ },
+ "Badem": {
+  "kcal": 579.0,
+  "protein": 21.15,
+  "carbs": 21.55,
+  "fat": 49.93,
+  "sr28": [
+   "12061"
+  ],
+  "approx": false
  },
  "Bal": {
   "kcal": 304.0,
@@ -197,6 +217,16 @@
   ],
   "approx": false
  },
+ "Dana antrikot": {
+  "kcal": 274.0,
+  "protein": 17.51,
+  "carbs": 0.0,
+  "fat": 22.07,
+  "sr28": [
+   "13095"
+  ],
+  "approx": false
+ },
  "Dana biftek": {
   "kcal": 134.0,
   "protein": 21.38,
@@ -246,6 +276,17 @@
    "23572"
   ],
   "approx": false
+ },
+ "Defne yaprağı": {
+  "kcal": 313.0,
+  "protein": 7.61,
+  "carbs": 74.97,
+  "fat": 8.36,
+  "sr28": [
+   "02004"
+  ],
+  "approx": false,
+  "unitGrams": 5
  },
  "Dereotu": {
   "kcal": 43.0,
@@ -403,6 +444,16 @@
   "approx": false,
   "edible": 0.6
  },
+ "Hardal": {
+  "kcal": 60.0,
+  "protein": 3.74,
+  "carbs": 5.83,
+  "fat": 3.34,
+  "sr28": [
+   "02046"
+  ],
+  "approx": false
+ },
  "Havuç": {
   "kcal": 41.0,
   "protein": 0.93,
@@ -555,6 +606,16 @@
   ],
   "approx": true
  },
+ "Kereviz": {
+  "kcal": 42.0,
+  "protein": 1.5,
+  "carbs": 9.2,
+  "fat": 0.3,
+  "sr28": [
+   "11141"
+  ],
+  "approx": false
+ },
  "Kimyon": {
   "kcal": 375.0,
   "protein": 17.81,
@@ -658,6 +719,17 @@
   "approx": false,
   "edible": 0.6
  },
+ "Kuzu kol": {
+  "kcal": 264.0,
+  "protein": 16.58,
+  "carbs": 0.0,
+  "fat": 21.45,
+  "sr28": [
+   "17035"
+  ],
+  "approx": false,
+  "edible": 0.7
+ },
  "Kuzu kuşbaşı": {
   "kcal": 209.0,
   "protein": 18.47,
@@ -665,6 +737,16 @@
   "fat": 14.42,
   "sr28": [
    "17230"
+  ],
+  "approx": false
+ },
+ "Kuzu kıyma": {
+  "kcal": 282.0,
+  "protein": 16.56,
+  "carbs": 0.0,
+  "fat": 23.41,
+  "sr28": [
+   "17224"
   ],
   "approx": false
  },
@@ -679,6 +761,16 @@
   "approx": false,
   "edible": 0.7
  },
+ "Kuş üzümü": {
+  "kcal": 283.0,
+  "protein": 4.08,
+  "carbs": 74.08,
+  "fat": 0.27,
+  "sr28": [
+   "09085"
+  ],
+  "approx": false
+ },
  "Köftelik bulgur": {
   "kcal": 342.0,
   "protein": 12.29,
@@ -686,6 +778,16 @@
   "fat": 1.33,
   "sr28": [
    "20012"
+  ],
+  "approx": false
+ },
+ "Köri": {
+  "kcal": 325.0,
+  "protein": 14.29,
+  "carbs": 55.83,
+  "fat": 14.01,
+  "sr28": [
+   "02015"
   ],
   "approx": false
  },
@@ -825,6 +927,16 @@
   ],
   "approx": false,
   "unitGrams": 50
+ },
+ "Muskat": {
+  "kcal": 525.0,
+  "protein": 5.84,
+  "carbs": 49.29,
+  "fat": 36.31,
+  "sr28": [
+   "02025"
+  ],
+  "approx": false
  },
  "Muz": {
   "kcal": 89.0,
@@ -1113,6 +1225,16 @@
   ],
   "approx": true
  },
+ "Susam": {
+  "kcal": 573.0,
+  "protein": 17.73,
+  "carbs": 23.45,
+  "fat": 49.67,
+  "sr28": [
+   "12023"
+  ],
+  "approx": false
+ },
  "Süt": {
   "kcal": 61.0,
   "protein": 3.15,
@@ -1166,6 +1288,16 @@
    "11546"
   ],
   "approx": true
+ },
+ "Tarçın": {
+  "kcal": 247.0,
+  "protein": 3.99,
+  "carbs": 80.59,
+  "fat": 1.24,
+  "sr28": [
+   "02010"
+  ],
+  "approx": false
  },
  "Tavuk baget": {
   "kcal": 161.0,
@@ -1250,6 +1382,17 @@
   ],
   "approx": false
  },
+ "Taze nane": {
+  "kcal": 44.0,
+  "protein": 3.29,
+  "carbs": 8.41,
+  "fat": 0.73,
+  "sr28": [
+   "02065"
+  ],
+  "approx": false,
+  "unitGrams": 30
+ },
  "Taze soğan": {
   "kcal": 32.0,
   "protein": 1.83,
@@ -1303,6 +1446,26 @@
   "approx": false,
   "unitGrams": 500
  },
+ "Toz kırmızı biber": {
+  "kcal": 282.0,
+  "protein": 14.14,
+  "carbs": 53.99,
+  "fat": 12.89,
+  "sr28": [
+   "02028"
+  ],
+  "approx": false
+ },
+ "Toz şeker": {
+  "kcal": 387.0,
+  "protein": 0.0,
+  "carbs": 99.98,
+  "fat": 0.0,
+  "sr28": [
+   "19335"
+  ],
+  "approx": false
+ },
  "Un": {
   "kcal": 364.0,
   "protein": 10.33,
@@ -1331,6 +1494,16 @@
   "fat": 0.33,
   "sr28": [
    "09050"
+  ],
+  "approx": false
+ },
+ "Yenibahar": {
+  "kcal": 263.0,
+  "protein": 6.09,
+  "carbs": 72.12,
+  "fat": 8.69,
+  "sr28": [
+   "02001"
   ],
   "approx": false
  },
@@ -1386,6 +1559,26 @@
   "approx": false,
   "unitGrams": 50
  },
+ "Zencefil": {
+  "kcal": 80.0,
+  "protein": 1.82,
+  "carbs": 17.77,
+  "fat": 0.75,
+  "sr28": [
+   "11216"
+  ],
+  "approx": false
+ },
+ "Zerdeçal": {
+  "kcal": 312.0,
+  "protein": 9.68,
+  "carbs": 67.14,
+  "fat": 3.25,
+  "sr28": [
+   "02043"
+  ],
+  "approx": false
+ },
  "Zeytinyağı": {
   "kcal": 884.0,
   "protein": 0.0,
@@ -1396,6 +1589,16 @@
   ],
   "approx": false,
   "density": 0.92
+ },
+ "Çam fıstığı": {
+  "kcal": 673.0,
+  "protein": 13.69,
+  "carbs": 13.08,
+  "fat": 68.37,
+  "sr28": [
+   "12147"
+  ],
+  "approx": false
  },
  "Çilek": {
   "kcal": 32.0,
@@ -1428,6 +1631,26 @@
   ],
   "approx": false,
   "density": 1.0
+ },
+ "İrmik": {
+  "kcal": 360.0,
+  "protein": 12.68,
+  "carbs": 72.83,
+  "fat": 1.05,
+  "sr28": [
+   "20066"
+  ],
+  "approx": false
+ },
+ "İsot": {
+  "kcal": 318.0,
+  "protein": 12.01,
+  "carbs": 56.63,
+  "fat": 17.27,
+  "sr28": [
+   "02031"
+  ],
+  "approx": true
  },
  "İşkembe": {
   "kcal": 85.0,

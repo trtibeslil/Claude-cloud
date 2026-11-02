@@ -56,6 +56,7 @@ const ReqPlan = z.object({
   meals: z.array(z.string()).min(1).max(3),
   options: z.number().int().min(1).max(5),
   recent: z.array(z.string()).max(20),
+  levels: z.array(z.number().int().min(1).max(3)).max(3).optional(),
 });
 const ReqSteps = z.object({
   title: z.string().max(200),
@@ -74,6 +75,13 @@ const ITEM_RULES = `Her malzeme için:
   Paketli üründe gramaj/hacim biliniyorsa onu kullan (ör. 2 × "Spagetti 500 g" → 1000 g). Yumurta, limon gibi sayılanlar adet.
 - category: ${CATS.join(", ")}.
 - food: yiyecek, içecek ya da mutfak malzemesiyse true; temizlik, kişisel bakım, kâğıt ürünü vb. ise false.`;
+
+const LEVEL_TEXT: Record<number, string> = {
+  1: "basit (kısa, pratik, az adımlı)",
+  2: "orta (biraz emek isteyen klasik ev yemekleri)",
+  3: "kompleks (çok adımlı, teknik ve derin lezzetli yemekler; marinasyon, uzun pişirme, hamur işi gibi)",
+};
+const levelText = (levels?: number[]) => (levels?.length ? levels : [1, 2, 3]).map(l => LEVEL_TEXT[l]).join(" ya da ");
 
 const inventoryText = (inv: z.infer<typeof InvItem>[]) =>
   inv.map(i => `${i.id} | ${i.name} | ${i.qty} ${i.unit}`).join("\n");
@@ -141,6 +149,7 @@ ${inventoryText(r.inventory)}
 
 Plan: ${r.days} gün; her gün sırasıyla şu öğünler: ${r.meals.join(", ")}. Kişi sayısı: ${r.people}.
 Son yapılan yemekler (tekrarlama): ${r.recent.join(", ") || "yok"}
+İstenen tarif zorluğu: ${levelText(r.levels)}
 
 Kurallar:
 - Her öğün için birbirinden belirgin şekilde farklı ${r.options} seçenek öner (farklı ana malzeme ya da pişirme yöntemi).

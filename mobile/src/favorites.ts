@@ -19,7 +19,7 @@ export function favoriteFromOption(o: Option, meals: string[]): Favorite {
   return {
     title: o.title, meals, minutes: o.minutes, servings: o.servings,
     uses: o.uses.map(u => ({ name: u.name, qty: u.qty, unit: u.unit })), extra: o.extra,
-    steps: o.steps, tip: o.tip, nutrition: o.nutrition ?? null, at: Date.now(),
+    steps: o.steps, tip: o.tip, nutrition: o.nutrition ?? null, level: o.level, at: Date.now(),
   };
 }
 
@@ -27,7 +27,7 @@ export function favoriteFromRecipe(r: Recipe): Favorite {
   return {
     title: r.t, meals: favoriteMeals([r], r.t), minutes: r.d, servings: 4,
     uses: r.i.filter(x => !x[3]).map(([name, qty, unit]) => ({ name, qty, unit })), extra: [],
-    steps: r.s, nutrition: { kcal: r.n[0], protein: r.n[1], carbs: r.n[2], fat: r.n[3] }, at: Date.now(),
+    steps: r.s, tip: r.p, level: r.z, nutrition: { kcal: r.n[0], protein: r.n[1], carbs: r.n[2], fat: r.n[3] }, at: Date.now(),
   };
 }
 

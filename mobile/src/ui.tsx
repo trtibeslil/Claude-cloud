@@ -42,10 +42,19 @@ export type PaletteId = keyof typeof PALETTES;
 export const DEFAULT_PALETTE: PaletteId = 'portakal';
 export type Colors = (typeof PALETTES)[PaletteId]['light'];
 const ThemeCtx = createContext<Colors>(PALETTES[DEFAULT_PALETTE].light);
-export function ThemeProvider({ children, palette }: { children: ReactNode; palette?: string }) {
+/** Yazı boyutu seviyeleri (Ayarlar > Yazı boyutu; başlıktaki A− / A+). Görme güçlüğü için tüm metin ve düğmeler büyür. */
+export const TEXT_SCALES: [number, string][] = [[0.9, 'Küçük'], [1, 'Normal'], [1.15, 'Büyük'], [1.3, 'Çok büyük'], [1.5, 'En büyük']];
+const ScaleCtx = createContext(1);
+/** Yazı boyutu çarpanı; sabit boyutlu metin ve simgeler bununla çarpılır. */
+export const useScale = () => useContext(ScaleCtx);
+export function ThemeProvider({ children, palette, textScale }: { children: ReactNode; palette?: string; textScale?: number }) {
   const scheme = useColorScheme();
   const p = PALETTES[(palette ?? DEFAULT_PALETTE) as PaletteId] ?? PALETTES[DEFAULT_PALETTE];
-  return <ThemeCtx.Provider value={scheme === 'dark' ? p.dark : p.light}>{children}</ThemeCtx.Provider>;
+  return (
+    <ThemeCtx.Provider value={scheme === 'dark' ? p.dark : p.light}>
+      <ScaleCtx.Provider value={textScale && textScale > 0 ? textScale : 1}>{children}</ScaleCtx.Provider>
+    </ThemeCtx.Provider>
+  );
 }
 export const useColors = () => useContext(ThemeCtx);
 export const isDark = (c: Colors) => c.mode === 'dark';
@@ -55,8 +64,10 @@ export const shadow = (c: Colors, strong = false): ViewStyle => ({
 });
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
-export const Icon = ({ name, size = 20, color }: { name: IconName; size?: number; color: string }) =>
-  <Ionicons name={name} size={size} color={color} />;
+export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color: string }) {
+  const k = useScale();
+  return <Ionicons name={name} size={Math.round(size * k)} color={color} />;
+}
 
 export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const c = useColors();
@@ -68,8 +79,10 @@ export function T({ children, kind = 'body', color, style, numberOfLines }: {
   color?: string; style?: object; numberOfLines?: number;
 }) {
   const c = useColors();
+  const k = useScale();
   const def = kind === 'small' ? c.muted : kind === 'label' ? c.accent : c.ink;
-  return <Text numberOfLines={numberOfLines} style={[s[kind], { color: color ?? def }, style]}>{children}</Text>;
+  const base = (StyleSheet.flatten(s[kind]) ?? {}) as { fontSize?: number; lineHeight?: number };
+  return <Text numberOfLines={numberOfLines} style={[base, { color: color ?? def, fontSize: (base.fontSize ?? 15) * k, ...(base.lineHeight ? { lineHeight: base.lineHeight * k } : null) }, style]}>{children}</Text>;
 }
 
 export function Btn({ title, onPress, kind = 'plain', disabled, busy, style, icon }: {
@@ -77,6 +90,7 @@ export function Btn({ title, onPress, kind = 'plain', disabled, busy, style, ico
   disabled?: boolean; busy?: boolean; style?: ViewStyle; icon?: IconName;
 }) {
   const c = useColors();
+  const k = useScale();
   const bg = kind === 'primary' ? c.accent : kind === 'ghost' ? 'transparent' : kind === 'danger' ? c.dangerSoft : c.field;
   const fg = kind === 'primary' ? c.accentInk : kind === 'danger' ? c.danger : kind === 'ghost' ? c.accent : c.ink;
   return (
@@ -85,11 +99,11 @@ export function Btn({ title, onPress, kind = 'plain', disabled, busy, style, ico
       accessibilityState={{ disabled: !!(disabled || busy), busy: !!busy }}
       disabled={disabled || busy}
       onPress={onPress}
-      style={({ pressed }) => [s.btn, { backgroundColor: bg, opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+      style={({ pressed }) => [s.btn, { minHeight: 46 * Math.max(1, k), backgroundColor: bg, opacity: disabled ? 0.45 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
         kind === 'primary' && !disabled ? { shadowColor: c.accent, shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 4 } : null, style]}
     >
       {busy ? <ActivityIndicator color={fg} size="small" /> : icon ? <Icon name={icon} size={18} color={fg} /> : null}
-      <Text style={[s.btnText, { color: fg }]}>{title}</Text>
+      <Text style={[s.btnText, { color: fg, fontSize: 15 * k }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -107,12 +121,13 @@ export function IconBtn({ name, label, onPress, tone = 'plain' }: { name: IconNa
 
 export function Field(props: TextInputProps & { width?: number }) {
   const c = useColors();
+  const k = useScale();
   const { width, style, ...rest } = props;
   return (
     <TextInput
       placeholderTextColor={c.muted}
       {...rest}
-      style={[s.field, { backgroundColor: c.field, color: c.ink }, width ? { width } : { flex: 1 }, style]}
+      style={[s.field, { backgroundColor: c.field, color: c.ink, fontSize: 15 * k, minHeight: 46 * Math.max(1, k) }, width ? { width: width * Math.max(1, k) } : { flex: 1 }, style]}
     />
   );
 }
@@ -121,7 +136,8 @@ export function Chip({ text, tone = 'soft' }: { text: string; tone?: 'soft' | 'w
   const c = useColors();
   const bg = tone === 'warn' ? c.warnSoft : tone === 'done' ? c.fresh : c.accentSoft;
   const fg = tone === 'warn' ? c.warn : tone === 'done' ? c.freshInk : c.ink;
-  return <View style={[s.chip, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 12, fontWeight: '600' }}>{text}</Text></View>;
+  const k = useScale();
+  return <View style={[s.chip, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 12 * k, fontWeight: '600' }}>{text}</Text></View>;
 }
 
 export function Toggle({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
@@ -129,7 +145,7 @@ export function Toggle({ label, on, onPress }: { label: string; on: boolean; onP
   return (
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={onPress}
       style={[s.toggle, { backgroundColor: on ? c.accent : c.field }]}>
-      <Text style={{ color: on ? c.accentInk : c.ink, fontWeight: '600', fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: on ? c.accentInk : c.ink, fontWeight: '600', fontSize: 14 * useScale() }}>{label}</Text>
     </Pressable>
   );
 }
@@ -148,7 +164,7 @@ export function Stepper({ value, min, max, onChange, label }: { value: number; m
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={e => { const n = value + (e.nativeEvent.actionName === 'increment' ? 1 : -1); if (n >= min && n <= max) onChange(n); }}>
       {btn(-1)}
-      <Text style={[s.mono, { color: c.ink, fontSize: 17, minWidth: 34, textAlign: 'center' }]}>{value}</Text>
+      <Text style={[s.mono, { color: c.ink, fontSize: 17 * useScale(), minWidth: 34, textAlign: 'center' }]}>{value}</Text>
       {btn(1)}
     </View>
   );
@@ -158,7 +174,8 @@ export function Notice({ text, tone = 'warn' }: { text: string; tone?: 'warn' | 
   const c = useColors();
   const bg = tone === 'err' ? c.dangerSoft : tone === 'info' ? c.accent2Soft : c.warnSoft;
   const fg = tone === 'err' ? c.danger : tone === 'info' ? c.ink : c.warn;
-  return <View style={[s.notice, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 14, lineHeight: 20 }}>{text}</Text></View>;
+  const k = useScale();
+  return <View style={[s.notice, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 14 * k, lineHeight: 20 * k }}>{text}</Text></View>;
 }
 
 export const Row = ({ children, style }: { children: ReactNode; style?: ViewStyle }) =>

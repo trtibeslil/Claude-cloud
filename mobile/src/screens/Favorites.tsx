@@ -5,7 +5,7 @@ import { lower, MEALS, type Favorite } from '../logic';
 import { catOf, RECIPES } from '../recipes';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, IconBtn, Row, T, useColors } from '../ui';
-import type { CookRequest } from './Menu';
+import { levelName, type CookRequest } from './Menu';
 
 const MEAL_KEY: Record<string, string> = { 'Kahvaltı': 'K', 'Öğle': 'O', 'Akşam': 'A' };
 
@@ -59,7 +59,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
             <Row style={{ flexWrap: 'nowrap' }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <T kind="h3">{f.title}</T>
-                <T kind="small">{f.minutes ? `${f.minutes} dk` : ''}{f.nutrition?.kcal ? ` · ${f.nutrition.kcal} kcal / kişi` : ''}</T>
+                <T kind="small">{[f.level ? levelName(f.level) : '', f.minutes ? `${f.minutes} dk` : '', f.nutrition?.kcal ? `${f.nutrition.kcal} kcal / kişi` : ''].filter(Boolean).join(' · ')}</T>
               </View>
               <IconBtn name="heart" label={`${f.title} favorilerden çıkar`} tone="accent" onPress={() => toggle(f)} />
             </Row>
@@ -71,6 +71,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
             {isOpen && f.steps?.length ? (
               <View style={{ gap: 6 }}>
                 {f.steps.map((step, j) => <T key={j} kind="small" color={c.ink}>{j + 1}. {step}</T>)}
+                {f.tip ? <T kind="small">Püf noktası: {f.tip}</T> : null}
               </View>
             ) : null}
             <Row>
@@ -91,7 +92,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
           <Row key={r.t} style={{ flexWrap: 'nowrap' }}>
             <View style={{ flex: 1 }}>
               <T style={{ fontWeight: '600' }}>{r.t}</T>
-              <T kind="small">{r.d} dk · {r.n[0]} kcal / kişi</T>
+              <T kind="small">{levelName(r.z)} · {r.d} dk · {r.n[0]} kcal / kişi</T>
             </View>
             <IconBtn name={fav ? 'heart' : 'heart-outline'} tone={fav ? 'accent' : 'plain'}
               label={fav ? `${r.t} favorilerden çıkar` : `${r.t} favorilere ekle`} onPress={() => toggle(favoriteFromRecipe(r))} />

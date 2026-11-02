@@ -5,6 +5,11 @@ import { blankState, categoryFor, CATS, type Draft, type State } from './logic';
 
 const KEY = 'dolap-defteri-v1';
 
+/** Tarayıcı önizlemesi (claude.ai) kendi depolamasını verebilir: veriyi kullanıcının hesabına yazar, güncellemelerde kaybolmaz.
+ *  Telefonda tanımlı değildir; AsyncStorage kullanılır. */
+type HostStorage = { getItem: (k: string) => Promise<string | null>; setItem: (k: string, v: string) => Promise<void> };
+const storage: HostStorage = (globalThis as { __dolapStorage?: HostStorage }).__dolapStorage ?? AsyncStorage;
+
 type Ctx = {
   state: State;
   loaded: boolean;
@@ -37,14 +42,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY)
+    storage.getItem(KEY)
       .then(raw => { if (raw) setState(merged(JSON.parse(raw))); })
       .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
 
   useEffect(() => {
-    if (loaded) AsyncStorage.setItem(KEY, JSON.stringify(state)).catch(() => {});
+    if (loaded) storage.setItem(KEY, JSON.stringify(state)).catch(() => {});
   }, [state, loaded]);
 
   const update = useCallback((fn: (s: State) => State) => setState(fn), []);

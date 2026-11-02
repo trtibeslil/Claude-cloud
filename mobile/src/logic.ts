@@ -1,8 +1,8 @@
 // Dolap hesapları: birimler, birleştirme, yemek yapınca düşme ve geri alma.
 // Saf fonksiyonlar; ekranlar ve kayıt katmanı bunları kullanır.
 
-export const UNITS = ['g', 'ml', 'adet', 'paket', 'demet', 'kutu', 'şişe'] as const;
-export type Unit = (typeof UNITS)[number];
+import { lower, norm, roundQty, nearlyZero, toNumber, type Unit } from './units';
+export * from './units';
 import catalog from './urunler.json';
 
 // Ürün kataloğu: catalog/build.py üretir, buraya kopyalar.
@@ -21,6 +21,8 @@ export type Option = {
   title: string; summary: string; minutes: number; servings: number;
   uses: Use[]; extra: { name: string; amount: string }[];
   steps?: string[]; tip?: string;
+  /** Kişi başı yaklaşık besin değerleri (gram), biliniyorsa. */
+  nutrition?: { kcal: number; protein: number; carbs: number; fat: number } | null;
 };
 export type Slot = { meal: string; options: Option[]; done: { option: number; people: number } | null };
 export type Plan = { createdAt: number; invRev: number; people: number; days: { label: string; meals: Slot[] }[] };
@@ -40,37 +42,6 @@ export const blankState = (): State => ({
 });
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-export const lower = (s: string) => String(s ?? '').trim().toLocaleLowerCase('tr');
-export const toNumber = (v: unknown) => Number(String(v ?? '').replace(',', '.')) || 0;
-
-/** Birimi temel birime çevirir: kg→g, l→ml, tane→adet. */
-export function norm(qty: unknown, unit: unknown): { qty: number; unit: Unit } {
-  const q = toNumber(qty);
-  const u = lower(String(unit ?? '')).replace(/\.$/, '');
-  if (['kg', 'kilo', 'kilogram'].includes(u)) return { qty: q * 1000, unit: 'g' };
-  if (['g', 'gr', 'gram'].includes(u)) return { qty: q, unit: 'g' };
-  if (['l', 'lt', 'litre', 'liter'].includes(u)) return { qty: q * 1000, unit: 'ml' };
-  if (['ml', 'mililitre'].includes(u)) return { qty: q, unit: 'ml' };
-  if (['adet', 'tane', 'ad', 'x'].includes(u)) return { qty: q, unit: 'adet' };
-  if ((UNITS as readonly string[]).includes(u)) return { qty: q, unit: u as Unit };
-  return { qty: q, unit: 'adet' };
-}
-
-export function roundQty(q: number, unit: string) {
-  if (unit === 'g' || unit === 'ml') return Math.round(q);
-  return Math.round(q * 10) / 10;
-}
-
-const nf = new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 });
-export function fmtQty(q: number, unit: string) {
-  if (unit === 'g' && q >= 1000) return nf.format(Math.round(q / 10) / 100) + ' kg';
-  if (unit === 'ml' && q >= 1000) return nf.format(Math.round(q / 10) / 100) + ' L';
-  return nf.format(roundQty(q, unit)) + ' ' + unit;
-}
-
-/** Bu miktarın altı "bitti" sayılır. */
-export const nearlyZero = (q: number, unit: string) => (unit === 'g' || unit === 'ml' ? q < 5 : q < 0.25);
-
 const PRODUCT_BY_NAME = new Map(PRODUCTS.map(p => [lower(p.name), p]));
 export const findProduct = (name: string) => PRODUCT_BY_NAME.get(lower(name));
 // Eski sürümlerin kategori adları → katalog kategorileri

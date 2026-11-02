@@ -30,7 +30,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "node --experimental-strip-types --test src/ocr/receipt.test.ts"
+    "test": "node --experimental-strip-types --import ./scripts/ts-resolve.mjs --test src/ocr/receipt.test.ts src/planner.test.ts"
   },
   "private": true,
   "expo": {

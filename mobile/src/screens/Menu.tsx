@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import * as api from '../api';
-import { dayLabel, findItem, fmtQty, MEALS, norm, type Option, type Slot, type Use } from '../logic';
+import { dayLabel, findItem, fmtQty, lower, MEALS, norm, type Option, type Slot, type Use } from '../logic';
+import { evaluate, planMenu } from '../planner';
+import { catOf, RECIPES } from '../recipes';
 import { useStore } from '../store';
 import { Btn, Card, Chip, Field, Notice, Row, Stepper, T, Toggle, useColors } from '../ui';
 
@@ -26,15 +28,16 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
   const makePlan = () => run('plan', async () => {
     if (!state.items.length) throw new Error('Önce dolaba birkaç malzeme ekle.');
     if (!st.meals.length) throw new Error('En az bir öğün seç.');
-    const out = await api.makePlan({
-      items: state.items, people: st.people, days: st.days, meals: st.meals, options: st.options,
-      recent: state.history.slice(0, 10).map(h => h.title),
-    });
+    const recent = state.history.slice(0, 10).map(h => h.title);
+    // Sunucu ayarlıysa yapay zekâ önerir; değilse uygulamadaki tariflerden dolaba göre seçilir.
+    const out = api.apiConfigured()
+      ? await api.makePlan({ items: state.items, people: st.people, days: st.days, meals: st.meals, options: st.options, recent })
+      : { days: planMenu(RECIPES, state.items, { people: st.people, days: st.days, meals: st.meals, options: st.options, recent, catOf }) };
     const days = out.days.slice(0, st.days).map((d, i) => ({
       label: dayLabel(i),
       meals: d.meals.filter(m => m.options.length).map((m): Slot => ({ meal: m.meal, done: null, options: m.options.slice(0, 5) })),
     })).filter(d => d.meals.length);
-    if (!days.length) throw new Error('Menü oluşturulamadı. Tekrar dene.');
+    if (!days.length) throw new Error(api.apiConfigured() ? 'Menü oluşturulamadı. Tekrar dene.' : 'Dolabındaki malzemelerle eşleşen tarif bulunamadı. Biraz daha malzeme ekleyip tekrar dene.');
     update(s => ({ ...s, plan: { createdAt: Date.now(), invRev: s.invRev, people: st.people, days } }));
     setOpen({});
   });
@@ -83,7 +86,8 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
         <T kind="small">{st.days} gün × {st.meals.length} öğün × {st.options} seçenek, {st.people} kişilik</T>
         {err?.key === 'plan' ? <Notice tone="err" text={err.msg} /> : null}
         <Btn kind="primary" title={busy === 'plan' ? 'Menü hazırlanıyor…' : p ? 'Yeni menü öner' : 'Menü öner'}
-          busy={busy === 'plan'} disabled={!!busy || !api.apiConfigured()} onPress={makePlan} />
+          busy={busy === 'plan'} disabled={!!busy} onPress={makePlan} />
+        {!api.apiConfigured() ? <T kind="small">Öneriler uygulamadaki {RECIPES.length} tariften, dolabındaki malzemelere göre seçilir. Eksik malzemeler ayrıca gösterilir.</T> : null}
       </Card>
 
       {p && p.invRev !== state.invRev ? <Notice tone="info" text="Dolap bu menüden sonra değişti. Güncel malzemelere göre yeni menü önerebilirsin." /> : null}
@@ -109,14 +113,17 @@ export function MenuScreen({ onCook }: { onCook: (r: CookRequest) => void }) {
         </View>
       ))}
 
-      <Card>
+      {!api.apiConfigured() ? <RecipePicker onPick={r => {
+        const e = evaluate(r, state.items, st.people, catOf);
+        onCook({ title: r.t, servings: st.people, uses: e.uses, people: st.people, source: null });
+      }} /> : <Card>
         <T kind="h3">Menü dışında bir şey mi yaptın?</T>
         <T kind="small">Ne yaptığını yaz, dolaptan düşülecekleri hesaplayayım.</T>
         <Field value={adhocText} onChangeText={setAdhocText} placeholder="Ör. 2 kişilik menemen yaptım" style={{ flex: 0 }} />
         {err?.key === 'adhoc' ? <Notice tone="err" text={err.msg} /> : null}
         <Btn kind="primary" title={busy === 'adhoc' ? 'Hesaplıyorum…' : 'Hesapla'} busy={busy === 'adhoc'}
-          disabled={!adhocText.trim() || !!busy || !state.items.length || !api.apiConfigured()} onPress={adhoc} />
-      </Card>
+          disabled={!adhocText.trim() || !!busy || !state.items.length} onPress={adhoc} />
+      </Card>}
     </View>
   );
 }
@@ -136,6 +143,14 @@ function OptionCard({ o, slot, oi, open, loading, error, disabled, onSteps, onCo
         {o.minutes ? <T kind="small">{o.minutes} dk</T> : null}
       </Row>
       {o.summary ? <T kind="small" color={c.ink}>{o.summary}</T> : null}
+      {o.nutrition?.kcal ? (
+        <Row style={{ gap: 6 }}>
+          <Chip text={`${o.nutrition.kcal} kcal`} />
+          <Chip text={`Protein ${o.nutrition.protein} g`} />
+          <Chip text={`Karb. ${o.nutrition.carbs} g`} />
+          <Chip text={`Yağ ${o.nutrition.fat} g`} />
+        </Row>
+      ) : null}
       <T kind="small">
         Dolaptan: {o.uses.length ? o.uses.map((u, i) => {
           const n = norm(u.qty, u.unit || findItem(state.items, u)?.unit);
@@ -158,9 +173,28 @@ function OptionCard({ o, slot, oi, open, loading, error, disabled, onSteps, onCo
           ) : error ? <Notice tone="err" text={error} /> : null
       ) : null}
       <Row>
-        <Btn title={open ? 'Tarifi gizle' : 'Tarif'} onPress={onSteps} disabled={disabled || !api.apiConfigured()} />
+        <Btn title={open ? 'Tarifi gizle' : 'Tarif'} onPress={onSteps} disabled={disabled || (!o.steps && !api.apiConfigured())} />
         {cooked ? null : <Btn kind="primary" title="Bunu yapıyorum" onPress={onCook} />}
       </Row>
+    </Card>
+  );
+}
+
+/** Yapay zekâ yokken "menü dışında yaptım": uygulamadaki tariflerden seçip dolaptan düşme. */
+function RecipePicker({ onPick }: { onPick: (r: (typeof RECIPES)[number]) => void }) {
+  const c = useColors();
+  const [q, setQ] = useState('');
+  const query = lower(q);
+  const found = query ? RECIPES.filter(r => lower(r.t).includes(query)).slice(0, 6) : [];
+  return (
+    <Card>
+      <T kind="h3">Menü dışında bir şey mi yaptın?</T>
+      <T kind="small">Yaptığın yemeği tariflerden seç, kullandığın malzemeleri dolaptan düşelim.</T>
+      <Field value={q} onChangeText={setQ} placeholder="Tarif ara: menemen, mercimek çorbası…" style={{ flex: 0 }} autoCorrect={false} />
+      {found.map(r => (
+        <Btn key={r.t} title={r.t} icon="restaurant-outline" onPress={() => { setQ(''); onPick(r); }} style={{ justifyContent: 'flex-start' }} />
+      ))}
+      {query && !found.length ? <T kind="small">Bu adla tarif yok. Malzemeleri Dolap ekranından elle düşebilirsin.</T> : null}
     </Card>
   );
 }

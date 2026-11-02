@@ -62,3 +62,42 @@ test('Zorluk seçimi: yalnızca seçilen seviyelerdeki tarifler önerilir', () =
   for (const o of only([1])) assert.equal(o.level, 1, o.title);
   assert.ok(recipes.filter(r => r.z === 3).every(r => r.s.length >= 7 && r.p), 'kompleks tarifler ayrıntılı ve püf noktalı');
 });
+
+test('Kural: sadece sarımsak varken hiçbir tarif önerilmez', () => {
+  const plan = planMenu(recipes, [item('s', 'Sarımsak', 250, 'g')], { ...opts, meals: ['Kahvaltı', 'Öğle', 'Akşam'], options: 5 });
+  assert.deepEqual(plan[0].meals, []);
+});
+
+test('Kural: ana protein yoksa (kuzu kol, ahtapot) o tarif önerilmez', () => {
+  const stock = [item('s', 'Sarımsak', 250, 'g'), item('p', 'Patates', 2000, 'g'), item('o', 'Kuru soğan', 1000, 'g'), item('l', 'Limon', 500, 'g')];
+  const titles = planMenu(recipes, stock, { ...opts, meals: ['Akşam'], options: 5 })[0].meals.flatMap(m => m.options.map(o => o.title));
+  assert.ok(!titles.includes('Kuzu tandır') && !titles.includes('Ahtapot ızgara'), titles.join(', '));
+  const tandir = recipes.find(r => r.t === 'Kuzu tandır')!;
+  assert.equal(evaluate(tandir, stock, 4, catOf).feasible, false);
+  assert.equal(evaluate(tandir, [...stock, item('k', 'Kuzu kol', 1500, 'g')], 4, catOf).feasible, true);
+});
+
+test('Kural: pirinç yoksa pilav önerilmez; baldo pirinç varsa olur', () => {
+  const pilav = recipes.find(r => r.t === 'Tereyağlı pirinç pilavı')!;
+  const base = [item('t', 'Tereyağı', 250, 'g')];
+  assert.equal(evaluate(pilav, base, 4, catOf).feasible, false);
+  assert.equal(evaluate(pilav, [...base, item('b', 'Baldo pirinç', 1000, 'g')], 4, catOf).feasible, true);
+});
+
+test('Kural: proteinli tarifte karbonhidrat ve sebzenin ikisi birden eksikse önerilmez', () => {
+  const karniyarik = recipes.find(r => r.t === 'Karnıyarık')!;
+  const meat = [item('k', 'Dana kıyma', 500, 'g')];
+  assert.equal(evaluate(karniyarik, meat, 4, catOf).feasible, false);                                   // patlıcan yok
+  assert.equal(evaluate(karniyarik, [...meat, item('p', 'Patlıcan', 1000, 'g')], 4, catOf).feasible, true);
+  const sote = recipes.find(r => r.t === 'Tavuk sote')!;
+  const chicken = [item('t', 'Tavuk göğsü', 600, 'g')];
+  assert.equal(evaluate(sote, chicken, 4, catOf).feasible, false);                                       // sebzelerin hiçbiri yok
+  assert.equal(evaluate(sote, [...chicken, item('d', 'Domates', 500, 'g')], 4, catOf).feasible, true);   // biri yeterli
+});
+
+test('Eşdeğer ürünler: tarif "Makarna" diyorsa dolaptaki spagetti kullanılır', () => {
+  const r = recipes.find(x => x.t === 'Kıymalı makarna')!;
+  const e = evaluate(r, [item('s', 'Spagetti', 500, 'g'), item('k', 'Dana kıyma', 500, 'g')], 4, catOf);
+  assert.equal(e.feasible, true);
+  assert.ok(e.uses.some(u => u.name === 'Spagetti'));
+});

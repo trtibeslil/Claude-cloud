@@ -52,7 +52,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
       </Row>
 
       {list.length ? list.map((f, i) => {
-        const { uses, missing } = favoriteUses(f, state.items, people, RECIPES, catOf);
+        const { uses, missing, mustMissing } = favoriteUses(f, state.items, people, RECIPES, catOf);
         const isOpen = open === favKey(f.title);
         return (
           <View key={favKey(f.title)} style={{ gap: 8, paddingTop: i ? 12 : 0, borderTopWidth: i ? 1 : 0, borderColor: c.line }}>
@@ -64,7 +64,8 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
               <IconBtn name="heart" label={`${f.title} favorilerden çıkar`} tone="accent" onPress={() => toggle(f)} />
             </Row>
             <Row style={{ gap: 6 }}>
-              {missing.length
+              {mustMissing.length ? <Chip tone="warn" text={`Olmazsa olmaz eksik: ${mustMissing.join(', ')}`} />
+                : missing.length
                 ? <Chip tone="warn" text={`Eksik: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ` +${missing.length - 3}` : ''}`} />
                 : <Chip tone="done" text="Malzemelerin hepsi dolapta" />}
             </Row>
@@ -76,7 +77,7 @@ export function FavoritesCard({ onCook }: { onCook: (r: CookRequest) => void }) 
             ) : null}
             <Row>
               {f.steps?.length ? <Btn title={isOpen ? 'Tarifi gizle' : 'Tarif'} onPress={() => setOpen(isOpen ? null : favKey(f.title))} /> : null}
-              <Btn kind="primary" title="Bunu yapıyorum" disabled={!uses.length}
+              <Btn kind="primary" title="Bunu yapıyorum" disabled={!uses.length || mustMissing.length > 0}
                 onPress={() => onCook({ title: f.title, servings: people, uses, people, source: null })} />
             </Row>
           </View>

@@ -220,5 +220,84 @@ for r in recipes:
         for k in tot: tot[k] += besin[name][k] * g / 100
     r["n"] = [round(tot["kcal"] / 4), round(tot["protein"] / 4), round(tot["carbs"] / 4), round(tot["fat"] / 4)]
     r["na"] = any(besin[name]["approx"] for name, *_ in r["i"])  # en az bir malzeme yaklaşık değerli
+# Malzeme rolleri ve tarif önerme kuralı (mobile/src/planner.ts uygular):
+#   m = olmazsa olmaz (dolapta yoksa tarif önerilmez), k = destek grubu (en az biri dolapta olmalı), s = yardımcı.
+# Öncelik: 1) protein  2) karbonhidrat  3) sebze. Sarımsak, soğan, ot, baharat, salça, yağ yardımcıdır.
+cat_of = {i[0]: i[1] for i in catalog["items"]}
+PROTEIN_TIER = {"beyaz-et": 4, "kirmizi-et": 4, "balik": 4, "sarkuteri": 4, "bakliyat": 3, "peynir": 2}
+PROTEIN_NAMES = {"Ton balığı": 4, "Haşlanmış nohut": 3, "Haşlanmış barbunya": 3, "Yumurta": 1, "Köy yumurtası": 1}
+CARB_CATS = {"tahil", "ekmek"}
+CARB_NAMES = {"Patates", "Tatlı patates", "Mantı", "Dondurulmuş mantı"}
+FLOURS = {"Un", "Tam buğday unu", "Mısır unu", "İrmik", "Galeta unu"}   # hamurun asıl kütlesiyse karbonhidrat
+VEG_CATS = {"sebze", "yesillik", "meyve"}
+AROMATIC = {"Sarımsak", "Kuru soğan", "Kırmızı soğan", "Taze soğan", "Zencefil", "Acı biber", "Limon", "Misket limonu",
+            "Maydanoz", "Dereotu", "Taze nane", "Fesleğen", "Kişniş", "Taze kekik", "Taze biberiye", "Taze sarımsak"}
+EGG_DISH = ("yumurta", "omlet", "menemen", "çılbır")
+DOUGH_DISH = ("pilav", "makarna", "spagetti", "erişte", "lazanya", "mantı", "börek", "pide", "tost", "gözleme", "simit", "açma",
+              "pişi", "krep", "kuskus", "risotto", "dürüm", "hamburger")
+GENERIC = {"taze", "kuru", "dana", "kuzu", "beyaz", "yesil", "kirmizi", "sari", "toz", "dondurulmus", "haslanmis", "pilavlik",
+           "koftelik", "baldo", "cherry", "dolmalik", "sivri", "kapya", "kultur", "siyah", "suzme", "tam", "bugday"}
+TITLE_SKIP = {"Salatalık"}  # "salata" başlığı salatalığı şart yapmasın
+# Adında geçmese de yemeği tanımlayan malzeme
+MUST = {"Karnıyarık": ["Patlıcan"], "Hünkar beğendi": ["Patlıcan"], "Ali Nazik kebabı": ["Patlıcan"], "İmam bayıldı": ["Patlıcan"],
+        "Şakşuka": ["Patlıcan"], "Türlü": ["Patlıcan", "Kabak"], "Fırında levrek": ["Levrek"]}
+def fold(w):
+    w = w.lower().replace("ı", "i").replace("İ", "i").replace("i̇", "i")
+    for a, b in (("ş", "s"), ("ğ", "g"), ("ü", "u"), ("ö", "o"), ("ç", "c")): w = w.replace(a, b)
+    return "".join(ch for ch in w if ch.isalnum())
+def role_of(name, g):
+    if name in PROTEIN_NAMES: return "p", PROTEIN_NAMES[name]
+    k = cat_of.get(name)
+    if k in PROTEIN_TIER: return "p", PROTEIN_TIER[k]
+    if name in CARB_NAMES or k in CARB_CATS: return "c", 0
+    if name in FLOURS: return ("c", 0) if g >= 200 else ("s", 0)
+    if k in VEG_CATS and name not in AROMATIC: return "v", 0
+    return "s", 0
+for r in recipes:
+    info = []
+    for idx, (name, qty, unit, opt) in enumerate(r["i"]):
+        role, tier = role_of(name, grams(name, qty, unit))
+        info.append((idx, name, role, tier, opt, grams(name, qty, unit)))
+    req = [x for x in info if not x[4]]
+    flags = {x[0]: "s" for x in info}
+    proteins = [x for x in req if x[2] == "p"]
+    if proteins:
+        top = max(x[3] for x in proteins)
+        for x in proteins:
+            if x[3] == top or (x[3] == 1 and any(w in r["t"].lower() for w in EGG_DISH)): flags[x[0]] = "m"
+        for x in req:
+            if x[2] in "cv": flags[x[0]] = "k"
+    else:
+        carbs = [x for x in req if x[2] == "c"]; vegs = [x for x in req if x[2] == "v"]
+        if carbs:
+            for x in carbs: flags[x[0]] = "m"
+            for x in vegs: flags[x[0]] = "k"
+        elif vegs:
+            main = max(vegs, key=lambda x: x[5]); flags[main[0]] = "m"
+            for x in vegs:
+                if x is not main: flags[x[0]] = "k"
+        # Proteinsiz tarifte kütlece en büyük malzeme de şarttır (cacıkta yoğurt, granola kasesinde yoğurt).
+        if req:
+            biggest = max(req, key=lambda x: x[5])
+            if flags[biggest[0]] == "s": flags[biggest[0]] = "m"
+    # Yemeğin adını veren malzeme şarttır: "Kıymalı patates"te patates, "Mantarlı tavuk"ta mantar.
+    title_stems = {fold(w)[:5] for w in r["t"].split() if len(w) >= 4}
+    for x in req:
+        if x[2] == "s" or x[1] in TITLE_SKIP: continue
+        if any(len(w) >= 4 and fold(w)[:5] in title_stems for w in x[1].split() if fold(w) not in GENERIC):
+            flags[x[0]] = "m"
+    # Hamur ve tahıl yemeklerinde (pilav, makarna, börek...) karbonhidrat şarttır.
+    if any(k in r["t"].lower() for k in DOUGH_DISH):
+        for x in req:
+            if x[2] == "c": flags[x[0]] = "m"
+    for name in MUST.get(r["t"], []):
+        for x in req:
+            if x[1] == name: flags[x[0]] = "m"
+    # Şart olan bir karbonhidrat/sebze varsa destek grubu zaten sağlanır; destekler yalnızca "eksik" olarak gösterilir.
+    if any(flags[x[0]] == "m" and x[2] in "cv" for x in req):
+        for x in req:
+            if flags[x[0]] == "k": flags[x[0]] = "s"
+    r["i"] = [[*ing, flags[i]] for i, ing in enumerate(r["i"])]
+    assert any(f == "m" for f in flags.values()), f"{r['t']}: olmazsa olmaz malzeme yok"
 (root.parent / "mobile/src/tarifler.json").write_text(json.dumps(recipes, ensure_ascii=False, separators=(",", ":")))
 print(len(recipes), "tarif (basit/orta/kompleks:", *[sum(r["z"] == z for r in recipes) for z in (1, 2, 3)], "):", sum("K" in r["m"] for r in recipes), "kahvaltı,", sum("O" in r["m"] for r in recipes), "öğle,", sum("A" in r["m"] for r in recipes), "akşam")

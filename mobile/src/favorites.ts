@@ -41,7 +41,7 @@ export function favoriteUses(f: Favorite, items: Item[], people: number, recipes
   const r = findRecipe(recipes, f.title);
   if (r) {
     const e = evaluate(r, items, people, catOf);
-    return { uses: e.uses, missing: e.missing.map(m => m.name) };
+    return { uses: e.uses, missing: e.missing.map(m => m.name), mustMissing: e.mustMissing };
   }
   const scale = people / (f.servings || people);
   const uses: Use[] = [], missing: string[] = [];
@@ -53,5 +53,5 @@ export function favoriteUses(f: Favorite, items: Item[], people: number, recipes
     uses.push({ itemId: it.id, name: it.name, qty: roundQty(take, it.unit), unit: it.unit });
   }
   for (const x of f.extra) if (!stockFor(x.name, items, catOf)) missing.push(x.name);
-  return { uses, missing };
+  return { uses, missing, mustMissing: [] as string[] };
 }

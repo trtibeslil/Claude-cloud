@@ -6,7 +6,8 @@ import type { Item, Option, Use } from './logic';
 
 export type Recipe = {
   t: string; m: string[]; d: number; tags: string[];
-  i: [name: string, qty: number, unit: string, optional: 0 | 1][];
+  /** role: m olmazsa olmaz, k destek grubu (en az biri), s yardımcı — catalog/tarifler.py belirler. */
+  i: [name: string, qty: number, unit: string, optional: 0 | 1, role?: 'm' | 'k' | 's'][];
   s: string[]; n: [kcal: number, protein: number, carbs: number, fat: number];
   /** Zorluk: 1 basit, 2 orta, 3 kompleks; p: püf noktası (kompleks tariflerde). */
   z: 1 | 2 | 3; p?: string;
@@ -14,6 +15,25 @@ export type Recipe = {
 const MEAL_KEY: Record<string, string> = { 'Kahvaltı': 'K', 'Öğle': 'O', 'Akşam': 'A' };
 const BASE_SERVINGS = 4;
 const words = (s: string) => fold(s).split(' ').filter(w => w.length >= 2);
+
+/** Birbirinin yerine geçebilen ürünler: tarif "Makarna" diyorsa dolaptaki spagetti de olur. */
+const SUBSTITUTES = [
+  ['Makarna', 'Spagetti', 'Penne makarna', 'Burgu makarna', 'Fiyonk makarna', 'Kelebek makarna'],
+  ['Pirinç', 'Baldo pirinç', 'Osmancık pirinç', 'Basmati pirinç'],
+  ['Bulgur', 'Pilavlık bulgur', 'Köftelik bulgur'],
+  ['Dana kıyma', 'Karışık kıyma', 'Kuzu kıyma'],
+  ['Domates', 'Salkım domates', 'Cherry domates'],
+  ['Sivri biber', 'Çarliston biber'],
+  ['Kuru soğan', 'Kırmızı soğan'],
+  ['Yoğurt', 'Süzme yoğurt'],
+  ['Beyaz peynir', 'Ezine peyniri', 'Feta'],
+  ['Kaşar peyniri', 'Eski kaşar'],
+  ['Tavuk göğsü', 'Tavuk bonfile', 'Tavuk şiş'],
+  ['Yumurta', 'Köy yumurtası'],
+  ['Süt', 'Yarım yağlı süt', 'Laktozsuz süt'],
+  ['Un', 'Tam buğday unu'],
+  ['Ekmek', 'Tam buğday ekmeği', 'Kepekli ekmek', 'Çavdar ekmeği'],
+].map(g => g.map(fold));
 
 /**
  * Tarif malzemesine dolapta karşılık gelen ürün: aynı ad, ya da aynı kategoride adı tarif malzemesini içeren ürün
@@ -24,19 +44,31 @@ export function stockFor(name: string, stock: Item[], catOf: (name: string) => s
   const exact = stock.find(i => i.qty > 0 && fold(i.name) === f);
   if (exact) return exact;
   const w = words(name), cat = catOf(name);
-  return stock.find(i => i.qty > 0 && (!cat || i.category === cat) && w.every(x => words(i.name).includes(x)));
+  const similar = stock.find(i => i.qty > 0 && (!cat || i.category === cat) && w.every(x => words(i.name).includes(x)));
+  if (similar) return similar;
+  const group = SUBSTITUTES.find(g => g.includes(f));
+  return group ? stock.find(i => i.qty > 0 && group.includes(fold(i.name))) : undefined;
 }
 
-type Evaluated = { recipe: Recipe; uses: Use[]; missing: { name: string; amount: string }[]; have: number; short: number };
+type Evaluated = {
+  recipe: Recipe; uses: Use[]; missing: { name: string; amount: string }[]; have: number; short: number;
+  /** Tarif önerme kuralı: olmazsa olmaz malzemelerin hepsi ve destek grubundan en az biri dolapta. */
+  feasible: boolean;
+  /** Dolapta olmayan olmazsa olmaz malzemeler. */
+  mustMissing: string[];
+};
 
 /** Tarifin bu kişi sayısı için dolaptan ne kullanacağını ve neyin eksik olduğunu hesaplar. */
 export function evaluate(r: Recipe, stock: Item[], people: number, catOf: (name: string) => string | undefined): Evaluated {
   const scale = people / BASE_SERVINGS;
   const uses: Use[] = [], missing: Evaluated['missing'] = [];
-  let have = 0, short = 0;
-  for (const [name, qty, unit, optional] of r.i) {
+  let have = 0, short = 0, mustOk = true, support = 0, supportHave = 0;
+  const mustMissing: string[] = [];
+  for (const [name, qty, unit, optional, role] of r.i) {
     const need = norm(qty * scale, unit);
     const it = stockFor(name, stock, catOf);
+    if (!optional && role === 'm' && !it) { mustOk = false; mustMissing.push(name); }
+    if (!optional && role === 'k') { support++; if (it) supportHave++; }
     if (!it) {
       if (!optional) missing.push({ name, amount: fmtQty(need.qty, need.unit) });
       continue;
@@ -47,7 +79,7 @@ export function evaluate(r: Recipe, stock: Item[], people: number, catOf: (name:
     have++;
     uses.push({ itemId: it.id, name: it.name, qty: roundQty(take, it.unit), unit: it.unit });
   }
-  return { recipe: r, uses, missing, have, short };
+  return { recipe: r, uses, missing, have, short, mustMissing, feasible: mustOk && (support === 0 || supportHave > 0) };
 }
 
 export function toOption(e: Evaluated, people: number): Option {
@@ -79,7 +111,7 @@ export function planMenu(recipes: Recipe[], items: Item[], o: PlanInput) {
       const key = MEAL_KEY[meal];
       const ranked = recipes.filter(r => r.m.includes(key) && (!o.levels?.length || o.levels.includes(r.z)))
         .map(r => evaluate(r, stock, o.people, o.catOf))
-        .filter(e => e.have > 0)
+        .filter(e => e.feasible)
         .map(e => ({ e, score: e.missing.length * 10 + e.short * 3 - e.have
           + (recent.has(fold(e.recipe.t)) ? 20 : 0) + (chosen.has(e.recipe.t) ? 15 : 0) }))
         .sort((a, b) => a.score - b.score || a.e.recipe.t.localeCompare(b.e.recipe.t, 'tr'));
